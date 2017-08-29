@@ -24,8 +24,9 @@ def update_archives(profile_dir, archives_dir):
             tar.add(filename, os.path.basename(filename))
 
     _log("Done.")
+    os.symlink(archive, os.path.join(archives_dir, 'latest.tar.gz'))
+
     # XXX create a diff if we have day -1 present here
-    # XXX update the aliases
 
 
 def main(args=sys.argv[1:]):

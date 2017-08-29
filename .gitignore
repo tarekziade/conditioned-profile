@@ -8,4 +8,5 @@ __pycache__
 bin/
 heavy_profile.egg-info
 include/
-lib/
+lib
+pip-selfcheck.json
