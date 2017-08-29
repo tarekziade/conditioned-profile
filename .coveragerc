@@ -1,0 +1,2 @@
+[run]
+omit = heavyprofile/__init__.py,heavyprofile/tests/*,*tmp*/*,.tox/*
