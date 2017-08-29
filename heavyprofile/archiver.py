@@ -12,7 +12,7 @@ def _log(msg):
     print(msg)
 
 
-def create_archives(profile_dir, archives_dir):
+def update_archives(profile_dir, archives_dir):
     today = date.today()
     archive = today.strftime('%Y-%m-%d-hp.tar.gz')
     _log("Creating %s..." % archive)
@@ -24,6 +24,8 @@ def create_archives(profile_dir, archives_dir):
             tar.add(filename, os.path.basename(filename))
 
     _log("Done.")
+    # XXX create a diff if we have day -1 present here
+    # XXX update the aliases
 
 
 def main(args=sys.argv[1:]):
@@ -31,7 +33,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument('profile-dir', help='Profile Dir', type=str)
     parser.add_argument('archives-dir', help='Archives Dir', type=str)
     args = parser.parse_args(args=args)
-    create_archives(args.profile_dir, args.archives_dir)
+    update_archives(args.profile_dir, args.archives_dir)
 
 
 if __name__ == "__main__":
