@@ -1,3 +1,4 @@
+# word list from http://www.worldclasslearning.com/english/4000-most-common-english-words.html
 aardvark
 abacus
 abbey
