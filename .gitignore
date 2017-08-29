@@ -1,1 +1,11 @@
 *.un~
+__pycache__
+*.pyc
+.Python
+.cache/
+.coverage
+.tox/
+bin/
+heavy_profile.egg-info
+include/
+lib/
