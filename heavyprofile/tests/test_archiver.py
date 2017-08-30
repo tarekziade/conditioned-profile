@@ -10,7 +10,7 @@ import tempfile
 
 class TestArchiver(unittest.TestCase):
     def setUp(self):
-        self.profile, self.profile_dir = fresh_profile()
+        self.profile_dir = fresh_profile()
         self.archives_dir = os.path.join(tempfile.mkdtemp())
 
     def tearDown(self):
