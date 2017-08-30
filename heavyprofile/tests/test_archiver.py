@@ -1,11 +1,13 @@
+import asyncio
 import os
 import unittest
 import shutil
 from datetime import date, timedelta
+import tempfile
 
 from heavyprofile.tests.support import fresh_profile
 from heavyprofile.archiver import update_archives
-import tempfile
+from heavyprofile.creator import build_profile
 
 
 class TestArchiver(unittest.TestCase):
@@ -50,3 +52,18 @@ class TestArchiver(unittest.TestCase):
         res = os.listdir(self.archives_dir)
         res.sort()
         self.assertEqual(res, wanted)
+
+    def test_archiving_after_changes(self):
+        # this creates a simple archive
+        when = date.today() - timedelta(days=1)
+        update_archives(self.profile_dir, self.archives_dir, when)
+
+        # then we do some browsing
+        import pdb; pdb.set_trace()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(build_profile(self.profile_dir))
+        loop.close()
+
+        # a new archive will show a diff
+        import pdb; pdb.set_trace()
+        update_archives(self.profile_dir, self.archives_dir)
