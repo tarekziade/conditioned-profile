@@ -59,11 +59,9 @@ class TestArchiver(unittest.TestCase):
         update_archives(self.profile_dir, self.archives_dir, when)
 
         # then we do some browsing
-        import pdb; pdb.set_trace()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(build_profile(self.profile_dir))
         loop.close()
 
         # a new archive will show a diff
-        import pdb; pdb.set_trace()
         update_archives(self.profile_dir, self.archives_dir)

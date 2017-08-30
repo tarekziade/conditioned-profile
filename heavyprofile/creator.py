@@ -5,10 +5,10 @@ import asyncio
 
 from arsenic import get_session
 from arsenic.browsers import Firefox
-from arsenic.services import Geckodriver, free_port
+from arsenic.services import Geckodriver, free_port, subprocess_based_service
 
 
-class CustomGeckodriver(Geckodriver)
+class CustomGeckodriver(Geckodriver):
     async def start(self):
         port = free_port()
         await self._check_version()
