@@ -43,7 +43,8 @@ def next_url():
 
 firefox = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
 
-async def build_profile(profile_dir, max_urls=10):
+
+async def build_profile(profile_dir, max_urls=2):
     caps = {"moz:firefoxOptions": {"binary": firefox,
                                    "args": ["-profile", profile_dir],
                                    }}

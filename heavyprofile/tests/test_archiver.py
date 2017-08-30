@@ -4,6 +4,8 @@ import unittest
 import shutil
 from datetime import date, timedelta
 import tempfile
+import tarfile
+import io
 
 from heavyprofile.tests.support import fresh_profile
 from heavyprofile.archiver import update_archives
@@ -14,6 +16,15 @@ class TestArchiver(unittest.TestCase):
     def setUp(self):
         self.profile_dir = fresh_profile()
         self.archives_dir = os.path.join(tempfile.mkdtemp())
+
+    def _diff_name(self, now=None, then=None):
+        if now is None:
+            now = date.today()
+        if then is None:
+            then = now - timedelta(days=1)
+        then_str = then.strftime('%Y-%m-%d')
+        now_str = now.strftime('%Y-%m-%d')
+        return 'diff-%s-%s-hp.tar.gz' % (then_str, now_str)
 
     def tearDown(self):
         shutil.rmtree(self.profile_dir)
@@ -40,12 +51,7 @@ class TestArchiver(unittest.TestCase):
             when = _15_days_ago + timedelta(days=i)
             wanted.append(when.strftime('%Y-%m-%d-hp.tar.gz'))
             if i != 0:
-                then = when - timedelta(days=1)
-                then_str = then.strftime('%Y-%m-%d')
-                when_str = when.strftime('%Y-%m-%d')
-                name = 'diff-%s-%s-hp.tar.gz' % (then_str, when_str)
-                wanted.append(name)
-
+                wanted.append(self._diff_name(when))
             update_archives(self.profile_dir, self.archives_dir, when)
 
         wanted.sort()
@@ -60,8 +66,22 @@ class TestArchiver(unittest.TestCase):
 
         # then we do some browsing
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(build_profile(self.profile_dir))
-        loop.close()
+        try:
+            loop.run_until_complete(build_profile(self.profile_dir))
+        finally:
+            loop.close()
 
-        # a new archive will show a diff
+        # a new archive will create a diff
         update_archives(self.profile_dir, self.archives_dir)
+        diffname = os.path.join(self.archives_dir, self._diff_name())
+        diffinfo = io.BytesIO()
+
+        with tarfile.open(diffname, "r:gz") as tar:
+            for tarinfo in tar:
+                if tarinfo.name != 'diffinfo':
+                    continue
+                diffinfo.write(tarinfo.tobuf())
+                diffinfo.seek(0)
+
+        #import pdb; pdb.set_trace()
+
