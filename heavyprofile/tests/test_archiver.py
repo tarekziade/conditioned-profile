@@ -7,7 +7,7 @@ import tempfile
 import tarfile
 import io
 
-from heavyprofile.tests.support import fresh_profile
+from heavyprofile.util import fresh_profile
 from heavyprofile.archiver import update_archives
 from heavyprofile.creator import build_profile
 

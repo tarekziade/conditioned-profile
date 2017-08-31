@@ -103,9 +103,12 @@ def update_archives(profile_dir, archives_dir, when=None):
 
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Archiver')
-    parser.add_argument('profile-dir', help='Profile Dir', type=str)
-    parser.add_argument('archives-dir', help='Archives Dir', type=str)
+    parser.add_argument('profile_dir', help='Profile Dir', type=str)
+    parser.add_argument('archives_dir', help='Archives Dir', type=str)
     args = parser.parse_args(args=args)
+    if not os.path.exists(args.archives_dir):
+        _log("%r does not exists." % args.archives_dir)
+        sys.exit(1)
     update_archives(args.profile_dir, args.archives_dir)
 
 

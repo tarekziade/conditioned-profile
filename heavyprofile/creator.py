@@ -6,6 +6,24 @@ import asyncio
 from arsenic import get_session
 from arsenic.browsers import Firefox
 from arsenic.services import Geckodriver, free_port, subprocess_based_service
+from arsenic import connection
+from structlog import wrap_logger
+
+from heavyprofile.util import fresh_profile
+
+class NullLogger:
+    def info(self, *args, **kw):
+        pass
+
+    def visit_url(self, index, url):
+        print("%s:%s" % (index, url))
+
+    def msg(self, event):
+        print(event)
+
+
+logger = wrap_logger(NullLogger(), processors=[])
+connection.log = logger
 
 
 class CustomGeckodriver(Geckodriver):
@@ -45,27 +63,35 @@ firefox = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
 
 
 async def build_profile(profile_dir, max_urls=2):
+    logger.msg("Updating profile located at %r" % profile_dir)
     caps = {"moz:firefoxOptions": {"binary": firefox,
                                    "args": ["-profile", profile_dir],
                                    }}
-    visited = 0
+    logger.msg("Starting the Fox...")
+    with open('gecko.log', 'a+') as glog:
+        async with get_session(CustomGeckodriver(log_file=glog),
+                               Firefox(**caps)) as session:
+            for current, url in enumerate(next_url()):
+                logger.visit_url(index=current+1, url=url)
+                await session.get(url)
+                if current == max_urls:
+                    break
 
-    async with get_session(CustomGeckodriver(), Firefox(**caps)) as session:
-        for url in next_url():
-            await session.get(url)
-            visited += 1
-            if visited == max_urls:
-                break
+    logger.msg("Done.")
 
 
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Creator')
     parser.add_argument('profile', help='Profile Dir', type=str)
     args = parser.parse_args(args=args)
+    if not os.path.exists(args.profile):
+        fresh_profile(args.profile)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(build_profile(args.profile_dir))
-    loop.close()
+    try:
+        loop.run_until_complete(build_profile(args.profile))
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':
