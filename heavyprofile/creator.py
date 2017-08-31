@@ -33,7 +33,7 @@ with open(URLS) as f:
     URLS = f.readlines()
 
 
-URL_LIST= []
+URL_LIST = []
 
 
 def _build_url_list():
@@ -64,7 +64,7 @@ async def build_profile(profile_dir, max_urls=2):
         async with get_session(CustomGeckodriver(log_file=glog),
                                Firefox(**caps)) as session:
             for current, url in enumerate(URL_LIST):
-                logger.visit_url(index=current+1, url=url)
+                logger.visit_url(index=current+1, total=len(URL_LIST), url=url)
                 await session.get(url)
                 if max_urls != -1 and current == max_urls:
                     break
