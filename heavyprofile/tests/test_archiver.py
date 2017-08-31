@@ -61,8 +61,11 @@ class TestArchiver(unittest.TestCase):
 
     def test_archiving_after_changes(self):
         # this creates a simple archive
-        when = date.today() - timedelta(days=1)
-        update_archives(self.profile_dir, self.archives_dir, when)
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+        _2_days_ago = today - timedelta(days=2)
+
+        update_archives(self.profile_dir, self.archives_dir, _2_days_ago)
 
         # then we do some browsing
         loop = asyncio.get_event_loop()
@@ -72,16 +75,40 @@ class TestArchiver(unittest.TestCase):
             loop.close()
 
         # a new archive will create a diff
-        update_archives(self.profile_dir, self.archives_dir)
-        diffname = os.path.join(self.archives_dir, self._diff_name())
-        diffinfo = io.BytesIO()
+        update_archives(self.profile_dir, self.archives_dir, yesterday)
+        diffname = self._diff_name(yesterday, _2_days_ago)
+        diffname = os.path.join(self.archives_dir, diffname)
 
+        # let's check the diff file
         with tarfile.open(diffname, "r:gz") as tar:
             for tarinfo in tar:
                 if tarinfo.name != 'diffinfo':
                     continue
-                diffinfo.write(tarinfo.tobuf())
-                diffinfo.seek(0)
+                diff = tar.extractfile(tarinfo)
+                diff = diff.read()
+                diff = [line for line in diff.split(b'\n') if line.strip() !=
+                        b'']
+                break
 
-        #import pdb; pdb.set_trace()
+        # we have over 100 new files
+        self.assertTrue(len(diff) > 100)
 
+        # let's do it again with today/yesterday
+        update_archives(self.profile_dir, self.archives_dir, today)
+        diffname = self._diff_name(today, yesterday)
+        diffname = os.path.join(self.archives_dir, diffname)
+
+        # let's check the diff file
+        with tarfile.open(diffname, "r:gz") as tar:
+            for tarinfo in tar:
+                if tarinfo.name != 'diffinfo':
+                    continue
+                diff = tar.extractfile(tarinfo)
+                diff = diff.read()
+                diff = diff.split(b'\n')
+                diff = [line for line in diff if line.strip() !=
+                        b'']
+                break
+
+        # we have no difference
+        self.assertTrue(len(diff) == 0)

@@ -7,8 +7,8 @@ import tarfile
 import os
 import glob
 from datetime import date, timedelta
-import tempfile
 import copy
+
 
 def _log(msg):
     print(msg)
@@ -73,6 +73,7 @@ def create_diff(archives_dir, when, current, previous):
                 tar.addfile(info, fileobj=io.BytesIO(data))
             else:
                 tar.addfile(info)
+
 
 def update_archives(profile_dir, archives_dir, when=None):
     if when is None:
