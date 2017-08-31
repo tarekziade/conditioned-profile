@@ -5,7 +5,6 @@ import shutil
 from datetime import date, timedelta
 import tempfile
 import tarfile
-import io
 
 from heavyprofile.util import fresh_profile
 from heavyprofile.archiver import update_archives

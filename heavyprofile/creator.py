@@ -6,24 +6,9 @@ import asyncio
 from arsenic import get_session
 from arsenic.browsers import Firefox
 from arsenic.services import Geckodriver, free_port, subprocess_based_service
-from arsenic import connection
-from structlog import wrap_logger
 
 from heavyprofile.util import fresh_profile
-
-class NullLogger:
-    def info(self, *args, **kw):
-        pass
-
-    def visit_url(self, index, url):
-        print("%s:%s" % (index, url))
-
-    def msg(self, event):
-        print(event)
-
-
-logger = wrap_logger(NullLogger(), processors=[])
-connection.log = logger
+from heavyprofile import logger
 
 
 class CustomGeckodriver(Geckodriver):

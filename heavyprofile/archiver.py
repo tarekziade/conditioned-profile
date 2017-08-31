@@ -9,9 +9,7 @@ import glob
 from datetime import date, timedelta
 import copy
 
-
-def _log(msg):
-    print(msg)
+from heavyprofile import logger
 
 
 def _b(data):
@@ -80,15 +78,15 @@ def update_archives(profile_dir, archives_dir, when=None):
         when = date.today()
     day_before = when - timedelta(days=1)
     archive = when.strftime('%Y-%m-%d-hp.tar.gz')
-    _log("Creating %s..." % archive)
+    logger.msg("Creating %s..." % archive)
     archive = os.path.join(archives_dir, archive)
 
     with tarfile.open(archive, "w:gz") as tar:
         for filename in glob.glob(os.path.join(profile_dir, "*")):
-            _log("\tAdding %s..." % filename)
+            logger.msg("\tAdding %s..." % filename)
             tar.add(filename, os.path.basename(filename))
 
-    _log("Done.")
+    logger.msg("Done.")
     latest = os.path.join(archives_dir, 'latest.tar.gz')
     if os.path.exists(latest):
         os.remove(latest)
@@ -97,7 +95,7 @@ def update_archives(profile_dir, archives_dir, when=None):
                             day_before.strftime('%Y-%m-%d-hp.tar.gz'))
 
     if os.path.exists(previous):
-        _log("Creating a diff tarball with the previous day")
+        logger.msg("Creating a diff tarball with the previous day")
         create_diff(archives_dir, when, archive, previous)
 
 
@@ -107,7 +105,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument('archives_dir', help='Archives Dir', type=str)
     args = parser.parse_args(args=args)
     if not os.path.exists(args.archives_dir):
-        _log("%r does not exists." % args.archives_dir)
+        logger.msg("%r does not exists." % args.archives_dir)
         sys.exit(1)
     update_archives(args.profile_dir, args.archives_dir)
 
