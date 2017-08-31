@@ -29,6 +29,9 @@ def create_diff(archives_dir, when, current, previous):
     previous_files = {}
     diff_info = []
     tarfiles = []
+    changed = 0
+    new = 0
+    deleted = 0
 
     # reading all files and dirs
     with tarfile.open(current, "r:gz") as tar:
@@ -42,18 +45,20 @@ def create_diff(archives_dir, when, current, previous):
     for name, info in current_files.items():
         if name not in previous_files:
             diff_info.append(b"NEW:%s" % _b(name))
+            new += 1
             tarfiles.append(info)
         else:
-            # XXX need to compare them
             old = previous_files[name][0].get_info()['chksum']
             new = info[0].get_info()['chksum']
             if old != new:
                 diff_info.append(b"CHANGED:%s" % _b(name))
+                changed += 1
                 tarfiles.append(info)
 
     for name, info in previous_files.items():
         if name not in current_files:
             diff_info.append(b"DELETED:%s" % _b(name))
+            deleted += 1
 
     day_before = when - timedelta(days=1)
     diff_archive = 'diff-%s-%s-hp.tar.gz' % (day_before.strftime('%Y-%m-%d'),
@@ -71,6 +76,8 @@ def create_diff(archives_dir, when, current, previous):
                 tar.addfile(info, fileobj=io.BytesIO(data))
             else:
                 tar.addfile(info)
+    logger.msg("=> %d new files, %d modified, %d deleted." % (new,
+                    changed, deleted))
 
 
 def update_archives(profile_dir, archives_dir, when=None):
@@ -83,7 +90,7 @@ def update_archives(profile_dir, archives_dir, when=None):
 
     with tarfile.open(archive, "w:gz") as tar:
         for filename in glob.glob(os.path.join(profile_dir, "*")):
-            logger.msg("\tAdding %s..." % filename)
+            logger.msg("=> Adding %s..." % filename)
             tar.add(filename, os.path.basename(filename))
 
     logger.msg("Done.")
@@ -97,7 +104,7 @@ def update_archives(profile_dir, archives_dir, when=None):
     if os.path.exists(previous):
         logger.msg("Creating a diff tarball with the previous day")
         create_diff(archives_dir, when, archive, previous)
-
+        logger.msg("Done.")
 
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Archiver')

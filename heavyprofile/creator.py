@@ -64,9 +64,9 @@ async def build_profile(profile_dir, max_urls=2):
         async with get_session(CustomGeckodriver(log_file=glog),
                                Firefox(**caps)) as session:
             for current, url in enumerate(URL_LIST):
-                logger.visit_url(index=current+1, total=len(URL_LIST), url=url)
+                logger.visit_url(index=current+1, total=max_urls, url=url)
                 await session.get(url)
-                if max_urls != -1 and current == max_urls:
+                if max_urls != -1 and current + 1 == max_urls:
                     break
 
     logger.msg("Done.")
@@ -75,13 +75,17 @@ async def build_profile(profile_dir, max_urls=2):
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Creator')
     parser.add_argument('profile', help='Profile Dir', type=str)
+    parser.add_argument('--max-urls', help='How many URLS to visit',
+                        type=int, default=-1)
+
     args = parser.parse_args(args=args)
     if not os.path.exists(args.profile):
         fresh_profile(args.profile)
 
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(build_profile(args.profile, max_urls=-1))
+        loop.run_until_complete(build_profile(args.profile,
+                                              max_urls=args.max_urls))
     finally:
         loop.close()
 

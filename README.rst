@@ -3,16 +3,35 @@ Heavy Profile
 
 The project is built in three parts:
 
-- **Profile generation** a script to create a Firefox "heavy" profile
+- **hp-creator** a script to create a Firefox "heavy" profile
 - **hp-archiver** a script to create a collection of tar-gzipped files
 - **Client Syncing** a script that synchronizes a local version of the profile
 
-Profile generation
-------------------
+hg-creator
+----------
 
-The tool maintains a local profile using Geckodriver.
+The tool maintains a local profile using Arsenic & Geckodriver,
+it visits random pages using a dictionary of words.
 
-XXX details
+To run it, just point the profile directory::
+
+    $ hp-creator /tmp/profile --max-urls 10
+    Updating profile located at '/tmp/profile'
+    Starting the Fox...
+    1/10 https://www.ebay.com/sch/i.html?_from=R40&_trksid=p2380057.m570.l1313.TR0.TRC0.H0.Xbottle.TRS0&_nkw=unit
+    2/10 https://www.amazon.com/s/ref=nb_sb_noss_2?url=search-alias%3Daps&field-keywords=child
+    3/10 https://www.bing.com/search?q=create+list+of+nounsmover
+    4/10 https://www.bing.com/search?q=create+list+of+nounsraccoon
+    5/10 https://search.yahoo.com/yhs/search?p=cat
+    6/10 https://www.youtube.com/results?search_query=fan
+    7/10 https://www.google.com/search?q=humor
+    8/10 https://www.bing.com/search?q=create+list+of+nounsscience
+    9/10 https://www.youtube.com/results?search_query=creator
+    10/10 https://www.ebay.com/sch/i.html?_from=R40&_trksid=p2380057.m570.l1313.TR0.TRC0.H0.Xbottle.TRS0&_nkw=sewer
+    Done.
+
+If the profile does not exists, it will generate a new one.
+
 
 
 hp-archiver
@@ -51,6 +70,20 @@ Diff files are using this naming pattern:
 Where the first date is the oldest version.
 
 The archives directory is published as a browsable HTTP directory.
+
+
+Example::
+
+    $ hp-archiver /tmp/profile /tmp/archives/
+    Creating 2017-08-31-hp.tar.gz...
+    => Adding /tmp/profile/addonStartup.json.lz4...
+    ...
+    => Adding /tmp/profile/xulstore.json...
+    Done.
+    Creating a diff tarball with the previous day
+    => 6183 new files, 255 modified, 5 deleted.
+    Done.
+
 
 
 Client Syncing
