@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import asyncio
+import random
 
 from arsenic import get_session
 from arsenic.browsers import Firefox
@@ -32,7 +33,10 @@ with open(URLS) as f:
     URLS = f.readlines()
 
 
-def next_url():
+URL_LIST= []
+
+
+def _build_url_list():
     for url in URLS:
         url = url.strip()
         if url.startswith('#'):
@@ -41,7 +45,10 @@ def next_url():
             word = word.strip()
             if word.startswith('#'):
                 continue
-            yield url % word
+            URL_LIST.append(url.format(word))
+    random.shuffle(URL_LIST)
+
+_build_url_list()
 
 
 firefox = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
@@ -56,10 +63,10 @@ async def build_profile(profile_dir, max_urls=2):
     with open('gecko.log', 'a+') as glog:
         async with get_session(CustomGeckodriver(log_file=glog),
                                Firefox(**caps)) as session:
-            for current, url in enumerate(next_url()):
+            for current, url in enumerate(URL_LIST):
                 logger.visit_url(index=current+1, url=url)
                 await session.get(url)
-                if current == max_urls:
+                if max_urls != -1 and current == max_urls:
                     break
 
     logger.msg("Done.")
@@ -74,7 +81,7 @@ def main(args=sys.argv[1:]):
 
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(build_profile(args.profile))
+        loop.run_until_complete(build_profile(args.profile, max_urls=-1))
     finally:
         loop.close()
 
