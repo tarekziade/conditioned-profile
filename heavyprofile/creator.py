@@ -56,7 +56,7 @@ async def build_profile(profile_dir, max_urls=2, firefox=None):
     logger.msg("Updating profile located at %r" % profile_dir)
     caps = {"moz:firefoxOptions": {"args": ["-profile", profile_dir]}}
     if firefox is not None:
-        caps['"moz:firefoxOptions']['binary'] = firefox
+        caps['moz:firefoxOptions']['binary'] = firefox
 
     logger.msg("Starting the Fox...")
     with open('gecko.log', 'a+') as glog:
