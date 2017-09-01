@@ -4,27 +4,50 @@ import os
 import sys
 import requests
 import time
-
 from datetime import date, timedelta
+
+from clint.textui import progress
 from heavyprofile import logger
+
 
 _STATE = '/tmp/hp-state'
 
 
+def download_file(url, target=None):
+    logger.msg("Downloading %s" % url)
+    if target is None:
+        target = url.split('/')[-1]
+    req = requests.get(url, stream=True)
+    total_length = int(req.headers.get('content-length'))
 
-def apply_archive(archive, profile_dir):
-    logger.msg("Downloading %s" % archive)
+    with open(target, 'wb') as f:
+        iter = req.iter_content(chunk_size=1024)
+        size = total_length / 1024 + 1
+        for chunk in progress.bar(iter, expected_size=size):
+            if chunk:
+                f.write(chunk)
+                f.flush()
 
 
-def apply_diff(diff, profile_dir):
-    logger.msg("Downloading %s" % diff)
+def apply_archive(server, archive, profile_dir):
+    download_file(server + '/' + archive)
+    raise NotImplementedError()
 
 
-def check_exists(archive):
+def apply_diff(server, diff, profile_dir):
+    download_file(server + '/' + diff)
+    raise NotImplementedError()
+
+
+def check_exists(server, archive):
     logger.msg("Check if %r exists" % archive)
+    resp = requests.head(server + '/' + archive)
+    return resp.status_code == 200
 
 
-def sync_profile(profile_dir, archives_url, state=_STATE, when=None):
+def sync_profile(profile_dir, server, state=_STATE, when=None):
+    server = server.rstrip('/')
+
     logger.msg("Syncing profile located at %r" % profile_dir)
     if not os.path.exists(profile_dir):
         logger.msg("This is a new profile")
@@ -58,7 +81,7 @@ def sync_profile(profile_dir, archives_url, state=_STATE, when=None):
             diffs.append('diff-%s-%s-hp.tar.gz' % (date1, date2))
         # we want to make sure each diff exists, if not, full download
         for diff in diffs:
-            if not check_exists(diff):
+            if not check_exists(server, diff):
                 break
         full = False
 
@@ -69,10 +92,10 @@ def sync_profile(profile_dir, archives_url, state=_STATE, when=None):
     if full:
         # let's pick up the last full archive
         archive = when.strftime('%Y-%m-%d-hp.tar.gz')
-        apply_archive(archive, profile_dir)
+        apply_archive(server, archive, profile_dir)
     else:
         for diff in diffs:
-            apply_diff(diff, profile_dir)
+            apply_diff(server, diff, profile_dir)
 
     with open(_STATE, 'w') as f:
         f.write(when.strftime('%Y-%m-%d'))
@@ -85,9 +108,10 @@ def sync_profile(profile_dir, archives_url, state=_STATE, when=None):
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Client')
     parser.add_argument('profile', help='Profile Dir', type=str)
-    parser.add_argument('archives', help='Archives URL', type=str)
+    parser.add_argument('--server', help='Archives server', type=str,
+                        default='http://localhost:8000')
     args = parser.parse_args(args=args)
-    sync_profile(args.profile, args.archives)
+    sync_profile(args.profile, args.server)
 
 
 if __name__ == '__main__':
