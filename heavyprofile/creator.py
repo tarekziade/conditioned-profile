@@ -48,17 +48,16 @@ def _build_url_list():
             URL_LIST.append(url.format(word))
     random.shuffle(URL_LIST)
 
+
 _build_url_list()
 
 
-firefox = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
-
-
-async def build_profile(profile_dir, max_urls=2):
+async def build_profile(profile_dir, max_urls=2, firefox=None):
     logger.msg("Updating profile located at %r" % profile_dir)
-    caps = {"moz:firefoxOptions": {"binary": firefox,
-                                   "args": ["-profile", profile_dir],
-                                   }}
+    caps = {"moz:firefoxOptions": {"args": ["-profile", profile_dir]}}
+    if firefox is not None:
+        caps['"moz:firefoxOptions']['binary'] = firefox
+
     logger.msg("Starting the Fox...")
     with open('gecko.log', 'a+') as glog:
         async with get_session(CustomGeckodriver(log_file=glog),
@@ -77,6 +76,8 @@ def main(args=sys.argv[1:]):
     parser.add_argument('profile', help='Profile Dir', type=str)
     parser.add_argument('--max-urls', help='How many URLS to visit',
                         type=int, default=-1)
+    parser.add_argument('--fiefox', help='Firefox Binary',
+                        type=str, default=None)
 
     args = parser.parse_args(args=args)
     if not os.path.exists(args.profile):
@@ -85,7 +86,8 @@ def main(args=sys.argv[1:]):
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(build_profile(args.profile,
-                                              max_urls=args.max_urls))
+                                              max_urls=args.max_urls,
+                                              firefox=args.firefox))
     finally:
         loop.close()
 

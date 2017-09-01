@@ -76,8 +76,8 @@ def create_diff(archives_dir, when, current, previous):
                 tar.addfile(info, fileobj=io.BytesIO(data))
             else:
                 tar.addfile(info)
-    logger.msg("=> %d new files, %d modified, %d deleted." % (new,
-                    changed, deleted))
+    msg = "=> %d new files, %d modified, %d deleted."
+    logger.msg(msg % (new, changed, deleted))
 
 
 def update_archives(profile_dir, archives_dir, when=None):
@@ -105,6 +105,7 @@ def update_archives(profile_dir, archives_dir, when=None):
         logger.msg("Creating a diff tarball with the previous day")
         create_diff(archives_dir, when, archive, previous)
         logger.msg("Done.")
+
 
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Archiver')
