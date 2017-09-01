@@ -5,14 +5,18 @@ import sys
 import requests
 import time
 from datetime import date, timedelta
+import tarfile
+import functools
 
 from clint.textui import progress
 from heavyprofile import logger
+from heavyprofile.util import DiffInfo
 
 
 _STATE = '/tmp/hp-state'
 
 
+## XXX we want a local download cache
 def download_file(url, target=None):
     logger.msg("Downloading %s" % url)
     if target is None:
@@ -27,16 +31,57 @@ def download_file(url, target=None):
             if chunk:
                 f.write(chunk)
                 f.flush()
+    return target
 
 
 def apply_archive(server, archive, profile_dir):
-    download_file(server + '/' + archive)
-    raise NotImplementedError()
+    file = download_file(server + '/' + archive)
+    logger.msg("Extracting everything in %r" % profile_dir)
+
+    with tarfile.open(file, "r:gz") as tar:
+        size = len(list(tar))
+        with progress.Bar(expected_size=size) as bar:
+
+            def _extract(self, *args, **kw):
+                bar.show(bar.last_progress + 1)
+                return self.old(*args, **kw)
+
+            tar.old = tar.extract
+            tar.extract = functools.partial(_extract, tar)
+
+            # we want feedback during extraction
+            tar.extractall(profile_dir)
 
 
 def apply_diff(server, diff, profile_dir):
-    download_file(server + '/' + diff)
-    raise NotImplementedError()
+    file = download_file(server + '/' + diff)
+    diffinfo = DiffInfo()
+
+    logger.msg("Applying diff %r..." % diff)
+
+    with tarfile.open(file, "r:gz") as tar:
+        info = tar.getmember("diffinfo")
+        diffinfo.load(tar.extractfile(info).read())
+        size = len(diffinfo)
+
+        for change_type, filename in progress.bar(diffinfo,
+                                                  expected_size=size):
+            filename = filename.decode()
+            if change_type in (b'NEW', b'CHANGED'):
+                info = tar.getmember(filename)
+                target = os.path.join(profile_dir, filename)
+                if info.isdir():
+                    if not os.path.exists(target):
+                        os.mkdir(target)
+                else:
+                    with open(target, 'wb') as f:
+                        # stream?
+                        data = tar.extractfile(info).read()
+                        f.write(data)
+            else:
+                target = os.path.join(profile_dir, filename)
+                if os.path.exists(target):
+                    os.remove(target)
 
 
 def check_exists(server, archive):
@@ -47,7 +92,7 @@ def check_exists(server, archive):
 
 def sync_profile(profile_dir, server, state=_STATE, when=None):
     server = server.rstrip('/')
-
+    old_profile_dir = profile_dir = profile_dir.rstrip('/')
     logger.msg("Syncing profile located at %r" % profile_dir)
     if not os.path.exists(profile_dir):
         logger.msg("This is a new profile")
@@ -64,7 +109,7 @@ def sync_profile(profile_dir, server, state=_STATE, when=None):
         when = date.today()
 
     full = True
-    if last_state is not None:
+    if last_state is not None and os.path.exists(profile_dir):
         if last_state == when:
             logger.msg("Nothing to do. Up-to-date.")
             return
@@ -85,15 +130,18 @@ def sync_profile(profile_dir, server, state=_STATE, when=None):
                 break
         full = False
 
-    logger.msg("Backing up the profile")
-    shutil.copytree(profile_dir, profile_dir + '.new')
-    profile_dir = profile_dir + '.new'
+    if os.path.exists(profile_dir):
+        logger.msg("Backing up the profile...")
+        shutil.copytree(profile_dir, profile_dir + '.new')
+        profile_dir = profile_dir + '.new'
 
     if full:
+        logger.msg("Full download...")
         # let's pick up the last full archive
         archive = when.strftime('%Y-%m-%d-hp.tar.gz')
         apply_archive(server, archive, profile_dir)
     else:
+        logger.msg("Diffs download...")
         for diff in diffs:
             apply_diff(server, diff, profile_dir)
 
@@ -101,7 +149,9 @@ def sync_profile(profile_dir, server, state=_STATE, when=None):
         f.write(when.strftime('%Y-%m-%d'))
 
     # moving over of everything went well
-    os.rename(profile_dir, profile_dir[:-len('.new')])
+    if not full:
+        shutil.rmtree(old_profile_dir)
+        os.rename(profile_dir, old_profile_dir)
     logger.msg("Done.")
 
 

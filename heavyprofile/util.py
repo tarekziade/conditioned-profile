@@ -17,9 +17,20 @@ class DiffInfo(object):
     def __init__(self):
         self._info = []
 
+    def __iter__(self):
+        for change in self._info:
+            yield change.split(b':')
+
+    def __len__(self):
+        return len(self._info)
+
     def load(self, data):
+        self._info[:] = []
         for line in data.split(b'\n'):
-            self.info.append(line)
+            line = line.strip()
+            if line == b'':
+                continue
+            self._info.append(line)
 
     def dump(self):
         return b'\n'.join(self._info)
