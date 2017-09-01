@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-install_requires = ["arsenic"]
+install_requires = ["arsenic", "requests"]
 
 setup(name='heavy-profile',
       version="0.1",
