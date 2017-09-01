@@ -10,6 +10,7 @@ from datetime import date, timedelta
 import copy
 
 from heavyprofile import logger
+from heavyprofile.util import DiffInfo
 
 
 def _b(data):
@@ -42,29 +43,31 @@ def create_diff(archives_dir, when, current, previous):
         for tarinfo in tar:
             previous_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
 
+    diff_info = DiffInfo()
+
     for name, info in current_files.items():
         if name not in previous_files:
-            diff_info.append(b"NEW:%s" % _b(name))
+            diff_info.add_new(_b(name))
             new += 1
             tarfiles.append(info)
         else:
             old = previous_files[name][0].get_info()['chksum']
             new = info[0].get_info()['chksum']
             if old != new:
-                diff_info.append(b"CHANGED:%s" % _b(name))
+                diff_info.add_changed(_b(name))
                 changed += 1
                 tarfiles.append(info)
 
     for name, info in previous_files.items():
         if name not in current_files:
-            diff_info.append(b"DELETED:%s" % _b(name))
+            diff_info.add_deleted(_b(name))
             deleted += 1
 
     day_before = when - timedelta(days=1)
     diff_archive = 'diff-%s-%s-hp.tar.gz' % (day_before.strftime('%Y-%m-%d'),
                                              when.strftime('%Y-%m-%d'))
     diff_archive = os.path.join(archives_dir, diff_archive)
-    diff_data = b'\n'.join(diff_info)
+    diff_data = diff_info.dump()
 
     with tarfile.open(diff_archive, "w:gz") as tar:
         diff_info = tarfile.TarInfo(name="diffinfo")
