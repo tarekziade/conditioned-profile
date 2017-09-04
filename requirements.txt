@@ -1,3 +1,4 @@
 arsenic
 requests
 clint
+beautifulsoup4

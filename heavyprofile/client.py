@@ -2,7 +2,6 @@ import shutil
 import argparse
 import os
 import sys
-import requests
 import time
 from datetime import date, timedelta
 import tarfile
@@ -10,56 +9,10 @@ import functools
 
 from clint.textui import progress
 from heavyprofile import logger
-from heavyprofile.util import DiffInfo, checksum
-
-
-class ArchiveNotFound(Exception):
-    pass
-
-
-class ArchiveError(Exception):
-    pass
+from heavyprofile.util import DiffInfo, download_file, check_exists
 
 
 _STATE = '/tmp/hp-state'
-
-
-# XXX we want a local download cache
-def download_file(url, target=None):
-    present, headers = check_exists(url)
-    if not present:
-        logger.msg("Cannot find %r" % url)
-        raise ArchiveNotFound(url)
-
-    logger.msg("Downloading %s" % url)
-    if target is None:
-        target = url.split('/')[-1]
-
-    check = requests.get(url + '.sha256')
-    check = check.text
-
-    if os.path.exists(target):
-        existing = checksum(target)
-        if existing == check:
-            logger.msg("Already Downloaded")
-            return target
-
-    req = requests.get(url, stream=True)
-    total_length = int(req.headers.get('content-length'))
-
-    with open(target, 'wb') as f:
-        iter = req.iter_content(chunk_size=1024)
-        size = total_length / 1024 + 1
-        for chunk in progress.bar(iter, expected_size=size):
-            if chunk:
-                f.write(chunk)
-                f.flush()
-
-    if check != checksum(target):
-        logger.msg("Bad checksum!")
-        raise ArchiveError(target)
-
-    return target
 
 
 def apply_archive(server, archive, profile_dir):
@@ -109,14 +62,6 @@ def apply_diff(server, diff, profile_dir):
                 target = os.path.join(profile_dir, filename)
                 if os.path.exists(target):
                     os.remove(target)
-
-
-def check_exists(archive, server=None):
-    logger.msg("Check if %r exists" % archive)
-    if server is not None:
-        archive = server + '/' + archive
-    resp = requests.head(archive)
-    return resp.status_code == 200, resp.headers
 
 
 def sync_profile(profile_dir, server, state=_STATE, when=None):

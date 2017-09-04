@@ -2,9 +2,22 @@ import os
 import tempfile
 import shutil
 import hashlib
+import requests
+from bs4 import BeautifulSoup
+from clint.textui import progress
+
+from heavyprofile import logger
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
+
+
+class ArchiveNotFound(Exception):
+    pass
+
+
+class ArchiveError(Exception):
+    pass
 
 
 def fresh_profile(target_dir=None):
@@ -58,3 +71,66 @@ def checksum(filename, write=True):
             f.write(hash.hexdigest())
 
     return hash.hexdigest()
+
+
+link = 'https://ftp.mozilla.org/pub/firefox/nightly/latest-mozilla-central/'
+
+
+def get_firefox_download_link():
+    page = requests.get(link).text
+    soup = BeautifulSoup(page, "html.parser")
+    for node in soup.find_all('a', href=True):
+        href = node['href']
+        if href.endswith('.dmg'):
+            return 'https://ftp.mozilla.org' + href
+    raise Exception()
+
+
+def check_exists(archive, server=None):
+    logger.msg("Check if %r exists" % archive)
+    if server is not None:
+        archive = server + '/' + archive
+    resp = requests.head(archive)
+    return resp.status_code == 200, resp.headers
+
+
+def download_file(url, target=None, check_file=True):
+    present, headers = check_exists(url)
+    if not present:
+        logger.msg("Cannot find %r" % url)
+        raise ArchiveNotFound(url)
+
+    logger.msg("Downloading %s" % url)
+    if target is None:
+        target = url.split('/')[-1]
+
+    if check_file:
+        check = requests.get(url + '.sha256')
+        check = check.text
+
+    if os.path.exists(target):
+        if not check_file:
+            # should at least check the size?
+            return target
+
+        existing = checksum(target)
+        if existing == check:
+            logger.msg("Already Downloaded")
+            return target
+
+    req = requests.get(url, stream=True)
+    total_length = int(req.headers.get('content-length'))
+
+    with open(target, 'wb') as f:
+        iter = req.iter_content(chunk_size=1024)
+        size = total_length / 1024 + 1
+        for chunk in progress.bar(iter, expected_size=size):
+            if chunk:
+                f.write(chunk)
+                f.flush()
+
+    if check_file and check != checksum(target):
+        logger.msg("Bad checksum!")
+        raise ArchiveError(target)
+
+    return target
