@@ -8,6 +8,7 @@ import os
 import glob
 from datetime import date, timedelta
 import copy
+import hashlib
 
 from heavyprofile import logger
 from heavyprofile.util import DiffInfo
@@ -24,6 +25,20 @@ def _tarinfo2mem(tar, tarinfo):
     if data is not None:
         data = data.read()
     return metadata, data
+
+
+def checksum(filename):
+    checksum = filename + ".sha256"
+    logger.msg("Creating checksum %r" % checksum)
+    hash = hashlib.sha256()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash.update(chunk)
+
+    with open(checksum, "w") as f:
+        f.write(hash.hexdigest())
+
+    return checksum
 
 
 def create_diff(archives_dir, when, current, previous):
@@ -87,6 +102,7 @@ def create_diff(archives_dir, when, current, previous):
 
     msg = "=> %d new files, %d modified, %d deleted."
     logger.msg(msg % (new, changed, deleted))
+    return diff_archive
 
 
 def update_archives(profile_dir, archives_dir, when=None):
@@ -105,17 +121,26 @@ def update_archives(profile_dir, archives_dir, when=None):
                 tar.add(filename, os.path.basename(filename))
                 bar.show(bar.last_progress + 1)
 
+    archive_hash = checksum(archive)
     logger.msg("Done.")
+
     latest = os.path.join(archives_dir, 'latest.tar.gz')
     if os.path.exists(latest):
         os.remove(latest)
     os.symlink(archive, latest)
+
+    latest_hash = os.path.join(archives_dir, 'latest.tar.gz.sha256')
+    if os.path.exists(latest_hash):
+        os.remove(latest_hash)
+    os.symlink(archive_hash, latest_hash)
+
     previous = os.path.join(archives_dir,
                             day_before.strftime('%Y-%m-%d-hp.tar.gz'))
 
     if os.path.exists(previous):
         logger.msg("Creating a diff tarball with the previous day")
-        create_diff(archives_dir, when, archive, previous)
+        diff = create_diff(archives_dir, when, archive, previous)
+        checksum(diff)
         logger.msg("Done.")
 
 

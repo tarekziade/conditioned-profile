@@ -37,20 +37,24 @@ class TestArchiver(unittest.TestCase):
         res.sort()
         today = date.today()
         archive = today.strftime('%Y-%m-%d-hp.tar.gz')
-        wanted = [archive, 'latest.tar.gz']
+        wanted = [archive, 'latest.tar.gz', archive + '.sha256',
+                  'latest.tar.gz.sha256']
+        wanted.sort()
         self.assertEqual(res, wanted)
 
     def test_diff_archiving(self):
         # we update the archives every day for 15 days
         # we keep the last ten days
-        wanted = ['latest.tar.gz']
+        wanted = ['latest.tar.gz', 'latest.tar.gz.sha256']
         _15_days_ago = date.today() - timedelta(days=15)
 
         for i in range(15):
             when = _15_days_ago + timedelta(days=i)
             wanted.append(when.strftime('%Y-%m-%d-hp.tar.gz'))
+            wanted.append(when.strftime('%Y-%m-%d-hp.tar.gz.sha256'))
             if i != 0:
                 wanted.append(self._diff_name(when))
+                wanted.append(self._diff_name(when) + '.sha256')
             update_archives(self.profile_dir, self.archives_dir, when)
 
         wanted.sort()
