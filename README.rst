@@ -32,6 +32,8 @@ To run it, just point the profile directory::
 
 If the profile does not exists, it will generate a new one.
 
+The profile also gets the latest Firefox Nightly and uses it
+automatically.
 
 
 hp-archiver
