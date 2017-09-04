@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+import hashlib
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
@@ -43,3 +44,17 @@ class DiffInfo(object):
 
     def add_deleted(self, name):
         self._info.append(b"DELETED:%s" % name)
+
+
+def checksum(filename, write=True):
+    hash = hashlib.sha256()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash.update(chunk)
+
+    if write:
+        check = filename + ".sha256"
+        with open(check, "w") as f:
+            f.write(hash.hexdigest())
+
+    return hash.hexdigest()

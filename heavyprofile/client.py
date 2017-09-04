@@ -10,7 +10,15 @@ import functools
 
 from clint.textui import progress
 from heavyprofile import logger
-from heavyprofile.util import DiffInfo
+from heavyprofile.util import DiffInfo, checksum
+
+
+class ArchiveNotFound(Exception):
+    pass
+
+
+class ArchiveError(Exception):
+    pass
 
 
 _STATE = '/tmp/hp-state'
@@ -18,9 +26,24 @@ _STATE = '/tmp/hp-state'
 
 # XXX we want a local download cache
 def download_file(url, target=None):
+    present, headers = check_exists(url)
+    if not present:
+        logger.msg("Cannot find %r" % url)
+        raise ArchiveNotFound(url)
+
     logger.msg("Downloading %s" % url)
     if target is None:
         target = url.split('/')[-1]
+
+    check = requests.get(url + '.sha256')
+    check = check.text
+
+    if os.path.exists(target):
+        existing = checksum(target)
+        if existing == check:
+            logger.msg("Already Downloaded")
+            return target
+
     req = requests.get(url, stream=True)
     total_length = int(req.headers.get('content-length'))
 
@@ -31,6 +54,11 @@ def download_file(url, target=None):
             if chunk:
                 f.write(chunk)
                 f.flush()
+
+    if check != checksum(target):
+        logger.msg("Bad checksum!")
+        raise ArchiveError(target)
+
     return target
 
 
@@ -83,10 +111,12 @@ def apply_diff(server, diff, profile_dir):
                     os.remove(target)
 
 
-def check_exists(server, archive):
+def check_exists(archive, server=None):
     logger.msg("Check if %r exists" % archive)
-    resp = requests.head(server + '/' + archive)
-    return resp.status_code == 200
+    if server is not None:
+        archive = server + '/' + archive
+    resp = requests.head(archive)
+    return resp.status_code == 200, resp.headers
 
 
 def sync_profile(profile_dir, server, state=_STATE, when=None):
@@ -124,10 +154,12 @@ def sync_profile(profile_dir, server, state=_STATE, when=None):
             date2 = date2.strftime('%Y-%m-%d')
             diffs.append('diff-%s-%s-hp.tar.gz' % (date1, date2))
         # we want to make sure each diff exists, if not, full download
-        for diff in diffs:
-            if not check_exists(server, diff):
-                break
         full = False
+        for diff in diffs:
+            present, __ = check_exists(diff, server)
+            if not present:
+                full = True
+                break
 
     if os.path.exists(profile_dir):
         logger.msg("Backing up the profile...")
@@ -136,8 +168,8 @@ def sync_profile(profile_dir, server, state=_STATE, when=None):
 
     if full:
         logger.msg("Full download...")
-        # let's pick up the last full archive
         archive = when.strftime('%Y-%m-%d-hp.tar.gz')
+        # let's pick up the last full archive
         apply_archive(server, archive, profile_dir)
     else:
         logger.msg("Diffs download...")

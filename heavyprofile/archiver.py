@@ -8,10 +8,9 @@ import os
 import glob
 from datetime import date, timedelta
 import copy
-import hashlib
 
 from heavyprofile import logger
-from heavyprofile.util import DiffInfo
+from heavyprofile.util import DiffInfo, checksum
 from clint.textui import progress
 
 
@@ -25,20 +24,6 @@ def _tarinfo2mem(tar, tarinfo):
     if data is not None:
         data = data.read()
     return metadata, data
-
-
-def checksum(filename):
-    checksum = filename + ".sha256"
-    logger.msg("Creating checksum %r" % checksum)
-    hash = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash.update(chunk)
-
-    with open(checksum, "w") as f:
-        f.write(hash.hexdigest())
-
-    return checksum
 
 
 def create_diff(archives_dir, when, current, previous):
@@ -121,7 +106,8 @@ def update_archives(profile_dir, archives_dir, when=None):
                 tar.add(filename, os.path.basename(filename))
                 bar.show(bar.last_progress + 1)
 
-    archive_hash = checksum(archive)
+    checksum(archive)
+    archive_hash = archive + '.sha256'
     logger.msg("Done.")
 
     latest = os.path.join(archives_dir, 'latest.tar.gz')
