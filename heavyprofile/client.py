@@ -16,7 +16,7 @@ from heavyprofile.util import DiffInfo
 _STATE = '/tmp/hp-state'
 
 
-## XXX we want a local download cache
+# XXX we want a local download cache
 def download_file(url, target=None):
     logger.msg("Downloading %s" % url)
     if target is None:
@@ -41,7 +41,6 @@ def apply_archive(server, archive, profile_dir):
     with tarfile.open(file, "r:gz") as tar:
         size = len(list(tar))
         with progress.Bar(expected_size=size) as bar:
-
             def _extract(self, *args, **kw):
                 bar.show(bar.last_progress + 1)
                 return self.old(*args, **kw)

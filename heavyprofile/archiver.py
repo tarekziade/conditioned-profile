@@ -11,6 +11,7 @@ import copy
 
 from heavyprofile import logger
 from heavyprofile.util import DiffInfo
+from clint.textui import progress
 
 
 def _b(data):
@@ -70,15 +71,20 @@ def create_diff(archives_dir, when, current, previous):
     diff_data = diff_info.dump()
 
     with tarfile.open(diff_archive, "w:gz") as tar:
-        diff_info = tarfile.TarInfo(name="diffinfo")
-        diff_info.size = len(diff_data)
-        tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
+        size = len(tarfiles) + 1
+        with progress.Bar(expected_size=size) as bar:
+            diff_info = tarfile.TarInfo(name="diffinfo")
+            diff_info.size = len(diff_data)
+            tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
+            bar.show(1)
 
-        for info, data in tarfiles:
-            if data is not None:
-                tar.addfile(info, fileobj=io.BytesIO(data))
-            else:
-                tar.addfile(info)
+            for info, data in tarfiles:
+                if data is not None:
+                    tar.addfile(info, fileobj=io.BytesIO(data))
+                else:
+                    tar.addfile(info)
+                bar.show(bar.last_progress + 1)
+
     msg = "=> %d new files, %d modified, %d deleted."
     logger.msg(msg % (new, changed, deleted))
 
@@ -92,9 +98,12 @@ def update_archives(profile_dir, archives_dir, when=None):
     archive = os.path.join(archives_dir, archive)
 
     with tarfile.open(archive, "w:gz") as tar:
-        for filename in glob.glob(os.path.join(profile_dir, "*")):
-            logger.msg("=> Adding %s..." % filename)
-            tar.add(filename, os.path.basename(filename))
+        files = glob.glob(os.path.join(profile_dir, "*"))
+        size = len(files)
+        with progress.Bar(expected_size=size) as bar:
+            for filename in files:
+                tar.add(filename, os.path.basename(filename))
+                bar.show(bar.last_progress + 1)
 
     logger.msg("Done.")
     latest = os.path.join(archives_dir, 'latest.tar.gz')
