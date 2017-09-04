@@ -56,7 +56,8 @@ _build_url_list()
 
 async def build_profile(profile_dir, max_urls=2, firefox=None):
     logger.msg("Updating profile located at %r" % profile_dir)
-    caps = {"moz:firefoxOptions": {"args": ["-profile", profile_dir]}}
+    caps = {"moz:firefoxOptions": {"args": ["-headless", "-profile",
+                                            profile_dir]}}
     if firefox is not None:
         caps['moz:firefoxOptions']['binary'] = firefox
 
