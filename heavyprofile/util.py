@@ -1,3 +1,4 @@
+import time
 import os
 import tempfile
 import shutil
@@ -5,6 +6,7 @@ import hashlib
 import requests
 from bs4 import BeautifulSoup
 from clint.textui import progress
+import contextlib
 
 from heavyprofile import logger
 
@@ -134,3 +136,28 @@ def download_file(url, target=None, check_file=True):
         raise ArchiveError(target)
 
     return target
+
+
+@contextlib.contextmanager
+def latest_nightly(binary=None):
+    if binary is None:
+        # we want to use the latest nightly
+        # mac os specific for now
+        nightly_archive = get_firefox_download_link()
+        logger.msg("Downloading %s" % nightly_archive)
+        target = download_file(nightly_archive, check_file=False)
+        cmd = "hdiutil attach -mountpoint /Volumes/Firefox %s"
+        os.system(cmd % target)
+        # now that the dmg is mounted, we can use it
+        binary = ('/Volumes/Firefox/FirefoxNightly.app'
+                  '/Contents/MacOS/firefox')
+        mounted = True
+    else:
+        mounted = False
+    try:
+        yield binary
+    finally:
+        if mounted:
+            logger.msg("Unmounting Firefox")
+            time.sleep(10)
+            os.system("hdiutil detach /Volumes/Firefox")

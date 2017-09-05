@@ -1,4 +1,3 @@
-import time
 import os
 import sys
 import argparse
@@ -9,8 +8,7 @@ from arsenic import get_session
 from arsenic.browsers import Firefox
 from arsenic.services import Geckodriver, free_port, subprocess_based_service
 
-from heavyprofile.util import (fresh_profile, get_firefox_download_link,
-                               download_file)
+from heavyprofile.util import fresh_profile, latest_nightly
 from heavyprofile import logger
 
 
@@ -86,33 +84,14 @@ def main(args=sys.argv[1:]):
     if not os.path.exists(args.profile):
         fresh_profile(args.profile)
 
-    if args.firefox is None:
-        # we want to use the latest nightly
-        # mac os specific for now
-        nightly_archive = get_firefox_download_link()
-        logger.msg("Downloading %s" % nightly_archive)
-        target = download_file(nightly_archive, check_file=False)
-        cmd = "hdiutil attach -mountpoint /Volumes/Firefox %s"
-        os.system(cmd % target)
-        # now that the dmg is mounted, we can use it
-        args.firefox = ('/Volumes/Firefox/FirefoxNightly.app'
-                        '/Contents/MacOS/firefox')
-        unmount = True
-    else:
-        unmount = False
-
     loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(build_profile(args.profile,
-                                              max_urls=args.max_urls,
-                                              firefox=args.firefox))
-    finally:
-        loop.close()
-
-    if unmount:
-        logger.msg("Unmounting Firefox")
-        time.sleep(10)
-        os.system("hdiutil detach /Volumes/Firefox")
+    with latest_nightly(args.firefox) as binary:
+        try:
+            loop.run_until_complete(build_profile(args.profile,
+                                                  max_urls=args.max_urls,
+                                                  firefox=binary))
+        finally:
+            loop.close()
 
 
 if __name__ == '__main__':
