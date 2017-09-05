@@ -182,4 +182,4 @@ def latest_nightly(binary=None):
                 os.system("hdiutil detach /Volumes/Firefox")
             elif platform.system() == 'Linux':
                 # XXX we should keep it for next time
-                os.rmtree('firefox')
+                shutil.rmtree('firefox')
