@@ -124,10 +124,11 @@ def sync_profile(profile_dir, server, state=_STATE, when=None):
     with open(_STATE, 'w') as f:
         f.write(when.strftime('%Y-%m-%d'))
 
-    # moving over of everything went well
-    if not full:
+    # moving over if everything went well
+    if old_profile_dir != profile_dir:
         shutil.rmtree(old_profile_dir)
         os.rename(profile_dir, old_profile_dir)
+
     logger.msg("Done.")
 
 
@@ -135,7 +136,7 @@ def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Client')
     parser.add_argument('profile', help='Profile Dir', type=str)
     parser.add_argument('--server', help='Archives server', type=str,
-                        default='http://localhost:8000')
+                        default='http://heavyprofile.dev.mozaws.net')
     args = parser.parse_args(args=args)
     sync_profile(args.profile, args.server)
 
