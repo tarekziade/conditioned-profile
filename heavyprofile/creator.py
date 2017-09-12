@@ -1,3 +1,4 @@
+import platform
 import os
 import sys
 import argparse
@@ -10,6 +11,7 @@ from arsenic.services import Geckodriver, free_port, subprocess_based_service
 
 from heavyprofile.util import fresh_profile, latest_nightly
 from heavyprofile import logger
+from heavyprofile.scenario import scenario
 
 
 class CustomGeckodriver(Geckodriver):
@@ -23,51 +25,23 @@ class CustomGeckodriver(Geckodriver):
         )
 
 
-WORDS = os.path.join(os.path.dirname(__file__), 'words.txt')
-with open(WORDS) as f:
-    WORDS = f.readlines()
+async def build_profile(args):
+    scenarii = scenario[args.scenarii]
+    logger.msg("Updating profile located at %r" % args.profile)
 
+    f_args = ["-profile", args.profile]
+    if platform.system() != 'Darwin':
+        f_args.append('-headless')
 
-URLS = os.path.join(os.path.dirname(__file__), 'urls.txt')
-with open(URLS) as f:
-    URLS = f.readlines()
-
-
-URL_LIST = []
-
-
-def _build_url_list():
-    for url in URLS:
-        url = url.strip()
-        if url.startswith('#'):
-            continue
-        for word in WORDS:
-            word = word.strip()
-            if word.startswith('#'):
-                continue
-            URL_LIST.append(url.format(word))
-    random.shuffle(URL_LIST)
-
-
-_build_url_list()
-
-
-async def build_profile(profile_dir, max_urls=2, firefox=None):
-    logger.msg("Updating profile located at %r" % profile_dir)
-    caps = {"moz:firefoxOptions": {"args": ["-headless", "-profile",
-                                            profile_dir]}}
-    if firefox is not None:
-        caps['moz:firefoxOptions']['binary'] = firefox
+    caps = {"moz:firefoxOptions": {"args": f_args}}
+    if args.firefox is not None:
+        caps['moz:firefoxOptions']['binary'] = args.firefox
 
     logger.msg("Starting the Fox...")
     with open('gecko.log', 'a+') as glog:
         async with get_session(CustomGeckodriver(log_file=glog),
                                Firefox(**caps)) as session:
-            for current, url in enumerate(URL_LIST):
-                logger.visit_url(index=current+1, total=max_urls, url=url)
-                await session.get(url)
-                if max_urls != -1 and current + 1 == max_urls:
-                    break
+            await scenarii(session, args)
 
     logger.msg("Done.")
 
@@ -76,9 +50,11 @@ def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Profile Creator')
     parser.add_argument('profile', help='Profile Dir', type=str)
     parser.add_argument('--max-urls', help='How many URLS to visit',
-                        type=int, default=-1)
+                        type=int, default=115)
     parser.add_argument('--firefox', help='Firefox Binary',
                         type=str, default=None)
+    parser.add_argument('--scenarii', help='Scenarii to use',
+                        type=str, default='simple')
 
     args = parser.parse_args(args=args)
     if not os.path.exists(args.profile):
@@ -86,10 +62,9 @@ def main(args=sys.argv[1:]):
 
     loop = asyncio.get_event_loop()
     with latest_nightly(args.firefox) as binary:
+        args.binary = binary
         try:
-            loop.run_until_complete(build_profile(args.profile,
-                                                  max_urls=args.max_urls,
-                                                  firefox=binary))
+            loop.run_until_complete(build_profile(args))
         finally:
             loop.close()
 
