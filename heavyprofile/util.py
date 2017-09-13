@@ -11,6 +11,7 @@ import contextlib
 import json
 
 from heavyprofile import logger
+from heavyprofile.signing import verify_signature, sign_file
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
@@ -66,7 +67,25 @@ class DiffInfo(object):
         self._info.append(b"DELETED:%s" % name)
 
 
-def checksum(filename, write=True):
+def verify(filename, pem_file=None, pem_password=None):
+    # verify hash
+    founded_hash = hashlib.sha256()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            founded_hash.update(chunk)
+    founded_hash = founded_hash.hexdigest()
+    with open(filename + '.sha256') as f:
+        wanted_hash = f.read()
+    if founded_hash != wanted_hash:
+        raise ValueError("Wrong Hash")
+
+    # verify signature
+    founded_hash = bytes(founded_hash, 'utf8')
+    verify_signature(filename, pem_file, pem_password, founded_hash)
+
+
+def checksum(filename, write=True, sign=False, pem_file=None,
+             pem_password=None):
     hash = hashlib.sha256()
     with open(filename, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -74,8 +93,12 @@ def checksum(filename, write=True):
 
     if write:
         check = filename + ".sha256"
+        logger.msg("Creating %s..." % check)
         with open(check, "w") as f:
             f.write(hash.hexdigest())
+        if sign:
+            bhash = bytes(hash.hexdigest(), 'utf8')
+            sign_file(filename, bhash, pem_file, pem_password)
 
     return hash.hexdigest()
 
@@ -187,3 +210,11 @@ def latest_nightly(binary=None):
             elif platform.system() == 'Linux':
                 # XXX we should keep it for next time
                 shutil.rmtree('firefox')
+
+
+if __name__ == '__main__':
+    key = 'heavyprofile/tests/key.pem'
+    archive = '/tmp/archives/simple-2017-09-13-hp.tar.gz'
+    pwd = b'password'
+    checksum(archive, sign=True, pem_file=key, pem_password=pwd)
+    verify(archive, pem_file=key, pem_password=pwd)

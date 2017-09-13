@@ -92,7 +92,8 @@ def create_diff(profile_name, archives_dir, when, current, previous):
     return diff_archive
 
 
-def update_archives(profile_dir, archives_dir, when=None):
+def update_archives(profile_dir, archives_dir, when=None, pem_file=None,
+                    pem_password=None):
     if when is None:
         when = date.today()
     # reading metadata
@@ -113,8 +114,9 @@ def update_archives(profile_dir, archives_dir, when=None):
                 tar.add(filename, os.path.basename(filename))
                 bar.show(bar.last_progress + 1)
 
-    checksum(archive)
+    checksum(archive, sign=True, pem_file=pem_file, pem_password=pem_password)
     archive_hash = archive + '.sha256'
+    archive_asc = archive + '.asc'
     logger.msg("Done.")
 
     latest = os.path.join(archives_dir, profile_name + '-latest.tar.gz')
@@ -128,6 +130,12 @@ def update_archives(profile_dir, archives_dir, when=None):
         os.remove(latest_hash)
     os.symlink(archive_hash, latest_hash)
 
+    latest_asc = os.path.join(archives_dir,
+                              profile_name + '-latest.tar.gz.asc')
+    if os.path.exists(latest_asc):
+        os.remove(latest_asc)
+    os.symlink(archive_asc, latest_asc)
+
     previous = day_before.strftime(profile_name + '-%Y-%m-%d-hp.tar.gz')
     previous = os.path.join(archives_dir, previous)
 
@@ -135,7 +143,8 @@ def update_archives(profile_dir, archives_dir, when=None):
         logger.msg("Creating a diff tarball with the previous day")
         diff = create_diff(profile_name, archives_dir, when, archive,
                            previous)
-        checksum(diff)
+        checksum(diff, sign=True, pem_file=pem_file,
+                 pem_password=pem_password)
         logger.msg("Done.")
 
 
@@ -144,6 +153,10 @@ def main(args=sys.argv[1:]):
     parser.add_argument('profile_dir', help='Profile Dir', type=str)
     parser.add_argument('archives_dir', help='Archives Dir', type=str)
     parser.add_argument('--prior', help='Prior', type=int, default=0)
+    parser.add_argument('--pem-file', help='pem file', type=str,
+                        default='heavyprofile/tests/key.pem')
+    parser.add_argument('--pem-password', help='pem password', type=str,
+                        default='password')
     args = parser.parse_args(args=args)
 
     when = date.today()
@@ -153,7 +166,8 @@ def main(args=sys.argv[1:]):
     if not os.path.exists(args.archives_dir):
         logger.msg("%r does not exists." % args.archives_dir)
         sys.exit(1)
-    update_archives(args.profile_dir, args.archives_dir, when)
+    update_archives(args.profile_dir, args.archives_dir, when,
+                    args.pem_file, args.pem_password)
 
 
 if __name__ == "__main__":

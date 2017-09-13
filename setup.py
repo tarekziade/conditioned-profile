@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
 
 
-install_requires = ["arsenic", "requests", "clint"]
+install_requires = ["arsenic", "requests", "clint",
+                    "cryptography"]
 
 
 setup(name='heavy-profile',

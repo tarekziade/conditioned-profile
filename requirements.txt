@@ -2,3 +2,4 @@ arsenic
 requests
 clint
 beautifulsoup4
+cryptography

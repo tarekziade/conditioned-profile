@@ -12,17 +12,25 @@ from heavyprofile.archiver import update_archives
 from heavyprofile.creator import build_profile
 
 
+PEM_FILE = os.path.join(os.path.dirname(__file__), 'key.pem')
+PEM_PASS = b'password'
+
+
 class TestArchiver(unittest.TestCase):
     def setUp(self):
         self.profile_dir = fresh_profile()
         self.archives_dir = os.path.join(tempfile.mkdtemp())
         self.args = args = namedtuple('args', ['scenarii', 'profile',
                                                'firefox',
-                                               'max_urls'])
+                                               'max_urls',
+                                               'pem_file',
+                                               'pem_password'])
         args.scenarii = 'simple'
         args.profile = self.profile_dir
         args.firefox = None
         args.max_urls = 2
+        args.pem_file = PEM_FILE
+        args.pem_password = PEM_PASS
 
     def _diff_name(self, now=None, then=None):
         if now is None:
@@ -39,13 +47,15 @@ class TestArchiver(unittest.TestCase):
 
     def test_simple_archiving(self):
         # this creates a simple archive and updates the latest sl
-        update_archives(self.profile_dir, self.archives_dir)
+        update_archives(self.profile_dir, self.archives_dir, None, PEM_FILE,
+                        PEM_PASS)
 
         res = os.listdir(self.archives_dir)
         res.sort()
         today = date.today()
         archive = today.strftime('simple-%Y-%m-%d-hp.tar.gz')
         wanted = [archive, 'simple-latest.tar.gz', archive + '.sha256',
+                  archive + '.asc', 'simple-latest.tar.gz.asc',
                   'simple-latest.tar.gz.sha256']
         wanted.sort()
         self.assertEqual(res, wanted)
@@ -53,17 +63,26 @@ class TestArchiver(unittest.TestCase):
     def test_diff_archiving(self):
         # we update the archives every day for 15 days
         # we keep the last ten days
-        wanted = ['simple-latest.tar.gz', 'simple-latest.tar.gz.sha256']
+        wanted = ['simple-latest.tar.gz',
+                  'simple-latest.tar.gz.sha256',
+                  'simple-latest.tar.gz.asc']
+
         _15_days_ago = date.today() - timedelta(days=15)
 
         for i in range(15):
             when = _15_days_ago + timedelta(days=i)
             wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz'))
             wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz.sha256'))
+            wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz.asc'))
+
             if i != 0:
                 wanted.append(self._diff_name(when))
                 wanted.append(self._diff_name(when) + '.sha256')
-            update_archives(self.profile_dir, self.archives_dir, when)
+                wanted.append(self._diff_name(when) + '.asc')
+
+            update_archives(self.profile_dir, self.archives_dir, when,
+                            PEM_FILE,
+                            PEM_PASS)
 
         wanted.sort()
         res = os.listdir(self.archives_dir)
@@ -76,7 +95,8 @@ class TestArchiver(unittest.TestCase):
         yesterday = today - timedelta(days=1)
         _2_days_ago = today - timedelta(days=2)
 
-        update_archives(self.profile_dir, self.archives_dir, _2_days_ago)
+        update_archives(self.profile_dir, self.archives_dir, _2_days_ago,
+                        PEM_FILE, PEM_PASS)
 
         # then we do some browsing
         loop = asyncio.get_event_loop()
@@ -86,7 +106,8 @@ class TestArchiver(unittest.TestCase):
             loop.close()
 
         # a new archive will create a diff
-        update_archives(self.profile_dir, self.archives_dir, yesterday)
+        update_archives(self.profile_dir, self.archives_dir, yesterday,
+                        PEM_FILE, PEM_PASS)
         diffname = self._diff_name(yesterday, _2_days_ago)
         diffname = os.path.join(self.archives_dir, diffname)
 
@@ -105,7 +126,8 @@ class TestArchiver(unittest.TestCase):
         self.assertTrue(len(diff) > 100)
 
         # let's do it again with today/yesterday
-        update_archives(self.profile_dir, self.archives_dir, today)
+        update_archives(self.profile_dir, self.archives_dir, today,
+                        PEM_FILE, PEM_PASS)
         diffname = self._diff_name(today, yesterday)
         diffname = os.path.join(self.archives_dir, diffname)
 
