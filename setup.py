@@ -1,6 +1,8 @@
 from setuptools import setup, find_packages
 
+
 install_requires = ["arsenic", "requests", "clint"]
+
 
 setup(name='heavy-profile',
       version="0.1",
@@ -13,5 +15,4 @@ setup(name='heavy-profile',
       [console_scripts]
       hp-archiver = heavyprofile.archiver:main
       hp-creator = heavyprofile.creator:main
-      hp-sync = heavyprofile.client:main
       """)

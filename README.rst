@@ -1,13 +1,13 @@
 Heavy Profile
 =============
 
-The project is built in three parts:
+The project is built in two parts:
 
 - **hp-creator** a script to create a Firefox "heavy" profile
 - **hp-archiver** a script to create a collection of tar-gzipped files
-- **hp-sync** a script that synchronizes a local version of the profile
 
-hg-creator
+
+hp-creator
 ----------
 
 The tool maintains a local profile using Arsenic & Geckodriver,
@@ -85,43 +85,4 @@ Example::
     Creating a diff tarball with the previous day
     => 6183 new files, 255 modified, 5 deleted.
     Done.
-
-
-
-hp-sync
--------
-
-The client uses HTTP to get the index of files and the files.
-
-On first run, the client downloads the latest archive and
-decompresses the profile after verifying the checksum. It
-also optionally checks the GPG signature::
-
-    $ hp-sync /tmp/profile2
-    Syncing profile located at '/tmp/profile2'
-    This is a new profile
-    Full download...
-    Downloading http://localhost:8000/2017-09-01-hp.tar.gz
-    [################################] 295599/295599 - 00:00:15
-    Extracting everything in '/tmp/profile2'
-    [################################] 19302/19302 - 00:00:08
-    Done.
-
-
-On the next runs, the client will try to download diffs to
-update its local profile::
-
-    $ hp-sync /tmp/profile2
-    Syncing profile located at '/tmp/profile2'
-    Check if 'diff-2017-08-31-2017-09-01-hp.tar.gz' exists
-    Backing up the profile...
-    Diffs download...
-    Downloading http://localhost:8000/diff-2017-08-31-2017-09-01-hp.tar.gz
-    [################################] 1/1 - 00:00:00
-    Applying diff 'diff-2017-08-31-2017-09-01-hp.tar.gz'...
-    [################################] 0/0 - 00:00:00
-    Done.
-
-In case there's a patching issue, the profile is recreated
-from scratch using the latest full archive.
 
