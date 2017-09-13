@@ -3,7 +3,6 @@ import os
 import sys
 import argparse
 import asyncio
-import random
 
 from arsenic import get_session
 from arsenic.browsers import Firefox

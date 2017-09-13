@@ -32,7 +32,6 @@ def _build_url_list():
 _build_url_list()
 
 
-
 async def simple(session, args):
     max = args.max_urls
     for current, url in enumerate(URL_LIST):

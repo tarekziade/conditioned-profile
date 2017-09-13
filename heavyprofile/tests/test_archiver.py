@@ -5,6 +5,7 @@ import shutil
 from datetime import date, timedelta
 import tempfile
 import tarfile
+from collections import namedtuple
 
 from heavyprofile.util import fresh_profile
 from heavyprofile.archiver import update_archives
@@ -15,6 +16,13 @@ class TestArchiver(unittest.TestCase):
     def setUp(self):
         self.profile_dir = fresh_profile()
         self.archives_dir = os.path.join(tempfile.mkdtemp())
+        self.args = args = namedtuple('args', ['scenarii', 'profile',
+                                               'firefox',
+                                               'max_urls'])
+        args.scenarii = 'simple'
+        args.profile = self.profile_dir
+        args.firefox = None
+        args.max_urls = 2
 
     def _diff_name(self, now=None, then=None):
         if now is None:
@@ -73,7 +81,7 @@ class TestArchiver(unittest.TestCase):
         # then we do some browsing
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(build_profile(self.profile_dir))
+            loop.run_until_complete(build_profile(self.args))
         finally:
             loop.close()
 
