@@ -8,6 +8,7 @@ import os
 import glob
 from datetime import date, timedelta
 import copy
+import json
 
 from heavyprofile import logger
 from heavyprofile.util import DiffInfo, checksum
@@ -26,7 +27,7 @@ def _tarinfo2mem(tar, tarinfo):
     return metadata, data
 
 
-def create_diff(archives_dir, when, current, previous):
+def create_diff(profile_name, archives_dir, when, current, previous):
     current_files = {}
     previous_files = {}
     diff_info = []
@@ -65,8 +66,9 @@ def create_diff(archives_dir, when, current, previous):
             deleted += 1
 
     day_before = when - timedelta(days=1)
-    diff_archive = 'diff-%s-%s-hp.tar.gz' % (day_before.strftime('%Y-%m-%d'),
-                                             when.strftime('%Y-%m-%d'))
+    diff_archive = profile_name + '-diff-%s-%s-hp.tar.gz'
+    diff_archive = diff_archive % (day_before.strftime('%Y-%m-%d'),
+                                   when.strftime('%Y-%m-%d'))
     diff_archive = os.path.join(archives_dir, diff_archive)
     diff_data = diff_info.dump()
 
@@ -93,8 +95,13 @@ def create_diff(archives_dir, when, current, previous):
 def update_archives(profile_dir, archives_dir, when=None):
     if when is None:
         when = date.today()
+    # reading metadata
+    with open(os.path.join(profile_dir, '.hp.json')) as f:
+        metadata = json.loads(f.read())
+
+    profile_name = metadata['name']
     day_before = when - timedelta(days=1)
-    archive = when.strftime('%Y-%m-%d-hp.tar.gz')
+    archive = when.strftime(profile_name + '-%Y-%m-%d-hp.tar.gz')
     logger.msg("Creating %s..." % archive)
     archive = os.path.join(archives_dir, archive)
 
@@ -110,22 +117,24 @@ def update_archives(profile_dir, archives_dir, when=None):
     archive_hash = archive + '.sha256'
     logger.msg("Done.")
 
-    latest = os.path.join(archives_dir, 'latest.tar.gz')
+    latest = os.path.join(archives_dir, profile_name + '-latest.tar.gz')
     if os.path.exists(latest):
         os.remove(latest)
     os.symlink(archive, latest)
 
-    latest_hash = os.path.join(archives_dir, 'latest.tar.gz.sha256')
+    latest_hash = os.path.join(archives_dir,
+                               profile_name + '-latest.tar.gz.sha256')
     if os.path.exists(latest_hash):
         os.remove(latest_hash)
     os.symlink(archive_hash, latest_hash)
 
-    previous = os.path.join(archives_dir,
-                            day_before.strftime('%Y-%m-%d-hp.tar.gz'))
+    previous = day_before.strftime(profile_name + '-%Y-%m-%d-hp.tar.gz')
+    previous = os.path.join(archives_dir, previous)
 
     if os.path.exists(previous):
         logger.msg("Creating a diff tarball with the previous day")
-        diff = create_diff(archives_dir, when, archive, previous)
+        diff = create_diff(profile_name, archives_dir, when, archive,
+                           previous)
         checksum(diff)
         logger.msg("Done.")
 

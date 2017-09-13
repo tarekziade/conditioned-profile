@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 import asyncio
+import json
 
 from arsenic import get_session
 from arsenic.browsers import Firefox
@@ -40,7 +41,13 @@ async def build_profile(args):
     with open('gecko.log', 'a+') as glog:
         async with get_session(CustomGeckodriver(log_file=glog),
                                Firefox(**caps)) as session:
-            await scenarii(session, args)
+            metadata = await scenarii(session, args)
+
+    # writing metadata
+    logger.msg("Creating metadata")
+    metadata['name'] = args.scenarii
+    with open(os.path.join(args.profile, '.hp.json'), 'w') as f:
+        f.write(json.dumps(metadata))
 
     logger.msg("Done.")
 

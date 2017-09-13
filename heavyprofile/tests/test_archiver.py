@@ -31,7 +31,7 @@ class TestArchiver(unittest.TestCase):
             then = now - timedelta(days=1)
         then_str = then.strftime('%Y-%m-%d')
         now_str = now.strftime('%Y-%m-%d')
-        return 'diff-%s-%s-hp.tar.gz' % (then_str, now_str)
+        return 'simple-diff-%s-%s-hp.tar.gz' % (then_str, now_str)
 
     def tearDown(self):
         shutil.rmtree(self.profile_dir)
@@ -44,22 +44,22 @@ class TestArchiver(unittest.TestCase):
         res = os.listdir(self.archives_dir)
         res.sort()
         today = date.today()
-        archive = today.strftime('%Y-%m-%d-hp.tar.gz')
-        wanted = [archive, 'latest.tar.gz', archive + '.sha256',
-                  'latest.tar.gz.sha256']
+        archive = today.strftime('simple-%Y-%m-%d-hp.tar.gz')
+        wanted = [archive, 'simple-latest.tar.gz', archive + '.sha256',
+                  'simple-latest.tar.gz.sha256']
         wanted.sort()
         self.assertEqual(res, wanted)
 
     def test_diff_archiving(self):
         # we update the archives every day for 15 days
         # we keep the last ten days
-        wanted = ['latest.tar.gz', 'latest.tar.gz.sha256']
+        wanted = ['simple-latest.tar.gz', 'simple-latest.tar.gz.sha256']
         _15_days_ago = date.today() - timedelta(days=15)
 
         for i in range(15):
             when = _15_days_ago + timedelta(days=i)
-            wanted.append(when.strftime('%Y-%m-%d-hp.tar.gz'))
-            wanted.append(when.strftime('%Y-%m-%d-hp.tar.gz.sha256'))
+            wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz'))
+            wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz.sha256'))
             if i != 0:
                 wanted.append(self._diff_name(when))
                 wanted.append(self._diff_name(when) + '.sha256')

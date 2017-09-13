@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from clint.textui import progress
 import contextlib
+import json
 
 from heavyprofile import logger
 
@@ -23,10 +24,13 @@ class ArchiveError(Exception):
     pass
 
 
-def fresh_profile(target_dir=None):
+def fresh_profile(target_dir=None, name='simple'):
     if target_dir is None:
         target_dir = os.path.join(tempfile.mkdtemp(), 'profile')
     shutil.copytree(_BASE_PROFILE, target_dir)
+    with open(os.path.join(target_dir, '.hp.json'), 'w') as f:
+        f.write(json.dumps({'name': name}))
+
     return target_dir
 
 

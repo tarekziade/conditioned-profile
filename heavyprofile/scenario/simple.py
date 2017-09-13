@@ -33,9 +33,13 @@ _build_url_list()
 
 
 async def simple(session, args):
+    metadata = {}
     max = args.max_urls
     for current, url in enumerate(URL_LIST):
         logger.visit_url(index=current+1, total=max, url=url)
         await session.get(url)
         if max != -1 and current + 1 == max:
             break
+
+    metadata['visited_url'] = current
+    return metadata
