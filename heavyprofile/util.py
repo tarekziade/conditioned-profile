@@ -11,7 +11,7 @@ import contextlib
 import json
 
 from heavyprofile import logger
-from heavyprofile.signing import verify_signature, sign_file
+from heavyprofile.signing import Signer
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
@@ -114,26 +114,8 @@ def verify(filename, pem_file=None, pem_password=None):
 
     # verify signature
     founded_hash = bytes(founded_hash, 'utf8')
-    verify_signature(filename, pem_file, pem_password, founded_hash)
-
-
-def checksum(filename, write=True, sign=False, pem_file=None,
-             pem_password=None):
-    hash = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash.update(chunk)
-
-    if write:
-        check = filename + ".sha256"
-        logger.msg("Creating %s..." % check)
-        with open(check, "w") as f:
-            f.write(hash.hexdigest())
-        if sign:
-            bhash = bytes(hash.hexdigest(), 'utf8')
-            sign_file(filename, bhash, pem_file, pem_password)
-
-    return hash.hexdigest()
+    signer = Signer(pem_file, pem_password)
+    signer.verify(filename, founded_hash)
 
 
 link = 'https://ftp.mozilla.org/pub/firefox/nightly/latest-mozilla-central/'
@@ -166,6 +148,7 @@ def check_exists(archive, server=None):
 
 
 def download_file(url, target=None, check_file=True):
+    signer = Signer()
     present, headers = check_exists(url)
     if not present:
         logger.msg("Cannot find %r" % url)
@@ -184,7 +167,7 @@ def download_file(url, target=None, check_file=True):
             # should at least check the size?
             return target
 
-        existing = checksum(target)
+        existing = signer.checksum(target)
         if existing == check:
             logger.msg("Already Downloaded")
             return target
@@ -200,7 +183,7 @@ def download_file(url, target=None, check_file=True):
                 f.write(chunk)
                 f.flush()
 
-    if check_file and check != checksum(target):
+    if check_file and check != signer.checksum(target):
         logger.msg("Bad checksum!")
         raise ArchiveError(target)
 
@@ -243,11 +226,3 @@ def latest_nightly(binary=None):
             elif platform.system() == 'Linux':
                 # XXX we should keep it for next time
                 shutil.rmtree('firefox')
-
-
-if __name__ == '__main__':
-    key = 'heavyprofile/tests/key.pem'
-    archive = '/tmp/archives/simple-2017-09-13-hp.tar.gz'
-    pwd = b'password'
-    checksum(archive, sign=True, pem_file=key, pem_password=pwd)
-    verify(archive, pem_file=key, pem_password=pwd)

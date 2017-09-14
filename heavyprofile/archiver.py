@@ -11,7 +11,8 @@ import copy
 import json
 
 from heavyprofile import logger
-from heavyprofile.util import DiffInfo, checksum
+from heavyprofile.util import DiffInfo
+from heavyprofile.signing import Signer
 from clint.textui import progress
 
 
@@ -38,10 +39,10 @@ class Archiver(object):
         self.profile_name = self.metadata['name']
         self.pem_file = pem_file
         self.pem_password = pem_password
+        self.signer = Signer(pem_file, pem_password)
 
     def _checksum(self, archive, sign=True):
-        checksum(archive, sign=True, pem_file=self.pem_file,
-                 pem_password=self.pem_password)
+        return self.signer.checksum(archive, write=True, sign=True)
 
     def _strftime(self, date, template='-%Y-%m-%d-hp.tar.gz'):
         return date.strftime(self.profile_name + template)
