@@ -52,6 +52,7 @@ def get_firefox_download_link():
         href = node['href']
         if href.endswith(extension):
             return 'https://ftp.mozilla.org' + href
+
     raise Exception()
 
 
@@ -70,7 +71,7 @@ def download_file(url, target=None, check_file=True):
         logger.msg("Cannot find %r" % url)
         raise ArchiveNotFound(url)
 
-    logger.msg("Downloading %s" % url)
+    etag = headers.get('ETag')
     if target is None:
         target = url.split('/')[-1]
 
@@ -80,6 +81,12 @@ def download_file(url, target=None, check_file=True):
 
     if os.path.exists(target):
         if not check_file:
+            if etag is not None:
+                with open(target + '.etag') as f:
+                    current_etag = f.read()
+            if etag == current_etag:
+                logger.msg("Already Downloaded")
+
             # should at least check the size?
             return target
 
@@ -88,6 +95,7 @@ def download_file(url, target=None, check_file=True):
             logger.msg("Already Downloaded")
             return target
 
+    logger.msg("Downloading %s" % url)
     req = requests.get(url, stream=True)
     total_length = int(req.headers.get('content-length'))
 
@@ -98,6 +106,10 @@ def download_file(url, target=None, check_file=True):
             if chunk:
                 f.write(chunk)
                 f.flush()
+
+    if etag is not None:
+        with open(target + '.etag', 'w') as f:
+            f.write(etag)
 
     if check_file and check != signer.checksum(target):
         logger.msg("Bad checksum!")

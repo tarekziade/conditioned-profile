@@ -114,11 +114,9 @@ class Archiver(object):
     def create_diff(self, when, current, previous):
         current_files = self._read_tar(current)
         previous_files = self._read_tar(previous)
-
         # build the diff info
         diff_info = DiffInfo()
         tarfiles = diff_info.update(current_files, previous_files)
-
         day_before = when - timedelta(days=1)
         diff_archive = self._get_diff_path(day_before, when)
         diff_data = diff_info.dump()
