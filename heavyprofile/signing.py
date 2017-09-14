@@ -30,6 +30,7 @@ class Signer(object):
     def verify(self, filename, file_hash=None):
         if self.pem_file is None:
             raise ValueError("No PEM loaded")
+
         if file_hash is None:
             file_hash = hashlib.sha256()
             with open(filename, "rb") as f:
@@ -37,7 +38,14 @@ class Signer(object):
                     file_hash.update(chunk)
             file_hash = file_hash.hexdigest()
             file_hash = bytes(file_hash, 'utf8')
+        else:
+            # verify hash
+            with open(filename + '.sha256') as f:
+                actual_hash = f.read()
+            if file_hash != actual_hash:
+                raise ValueError("Wrong Hash")
 
+        # verify signature
         with open(filename + '.asc', 'rb') as f:
             signature = f.read()
         try:

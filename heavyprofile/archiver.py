@@ -11,7 +11,7 @@ import copy
 import json
 
 from heavyprofile import logger
-from heavyprofile.util import DiffInfo
+from heavyprofile.diffinfo import DiffInfo
 from heavyprofile.signing import Signer
 from clint.textui import progress
 
