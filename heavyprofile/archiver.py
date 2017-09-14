@@ -70,6 +70,7 @@ class Archiver(object):
             archive = when
         else:
             archive = self._get_archive_path(when)
+
         with tarfile.open(archive, "w:gz") as tar:
             it = iterator(tar)
             size = next(it)
@@ -102,43 +103,20 @@ class Archiver(object):
             self.create_diff(when, archive, previous)
             logger.msg("Done.")
 
+    def _read_tar(self, filename):
+        files = {}
+        with tarfile.open(filename, "r:gz") as tar:
+            for tarinfo in tar:
+                files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
+        return files
+
     def create_diff(self, when, current, previous):
-        current_files = {}
-        previous_files = {}
-        diff_info = []
-        tarfiles = []
-        changed = 0
-        new = 0
-        deleted = 0
+        current_files = self._read_tar(current)
+        previous_files = self._read_tar(previous)
 
-        # reading all files and dirs
-        with tarfile.open(current, "r:gz") as tar:
-            for tarinfo in tar:
-                current_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
-
-        with tarfile.open(previous, "r:gz") as tar:
-            for tarinfo in tar:
-                previous_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
-
+        # build the diff info
         diff_info = DiffInfo()
-
-        for name, info in current_files.items():
-            if name not in previous_files:
-                diff_info.add_new(_b(name))
-                new += 1
-                tarfiles.append(info)
-            else:
-                old = previous_files[name][0].get_info()['chksum']
-                new = info[0].get_info()['chksum']
-                if old != new:
-                    diff_info.add_changed(_b(name))
-                    changed += 1
-                    tarfiles.append(info)
-
-        for name, info in previous_files.items():
-            if name not in current_files:
-                diff_info.add_deleted(_b(name))
-                deleted += 1
+        tarfiles = diff_info.update(current_files, previous_files)
 
         day_before = when - timedelta(days=1)
         diff_archive = self._get_diff_path(day_before, when)
@@ -146,10 +124,12 @@ class Archiver(object):
 
         def _arc(tar):
             yield len(tarfiles) + 1
+
             diff_info = tarfile.TarInfo(name="diffinfo")
             diff_info.size = len(diff_data)
             tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
-            yield "diffinfo"
+            yield diff_info
+
             for info, data in tarfiles:
                 if data is not None:
                     tar.addfile(info, fileobj=io.BytesIO(data))
@@ -158,8 +138,7 @@ class Archiver(object):
                 yield info
 
         self._create_archive(diff_archive, _arc)
-        msg = "=> %d new files, %d modified, %d deleted."
-        logger.msg(msg % (new, changed, deleted))
+        logger.msg(str(diff_info))
         self._checksum(diff_archive)
         return diff_archive
 

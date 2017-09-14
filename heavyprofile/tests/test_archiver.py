@@ -121,7 +121,7 @@ class TestArchiver(unittest.TestCase):
                 break
 
         # we have over 100 new files
-        self.assertTrue(len(diff) > 100)
+        self.assertTrue(len(diff) > 100, diff)
 
         # let's do it again with today/yesterday
         self.archiver.update(today)
