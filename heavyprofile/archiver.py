@@ -56,16 +56,27 @@ class Archiver(object):
         arcname = self.profile_name + '-diff-%s-%s-hp.tar.gz' % (date1, date2)
         return os.path.join(self.archives_dir, arcname)
 
-    def _create_archive(self, when, files=None):
-        if files is None:
-            files = glob.glob(os.path.join(self.profile_dir, "*"))
-        archive = self._get_archive_path(when)
-        with tarfile.open(archive, "w:gz") as tar:
-            size = len(files)
-            with progress.Bar(expected_size=size) as bar:
+    def _create_archive(self, when, iterator=None):
+        if iterator is None:
+            def _files(tar):
+                files = glob.glob(os.path.join(self.profile_dir, "*"))
+                yield len(files)
                 for filename in files:
                     tar.add(filename, os.path.basename(filename))
+                    yield filename
+            iterator = _files
+
+        if isinstance(when, str):
+            archive = when
+        else:
+            archive = self._get_archive_path(when)
+        with tarfile.open(archive, "w:gz") as tar:
+            it = iterator(tar)
+            size = next(it)
+            with progress.Bar(expected_size=size) as bar:
+                for filename in it:
                     bar.show(bar.last_progress + 1)
+
         self._checksum(archive)
         return archive
 
@@ -132,21 +143,21 @@ class Archiver(object):
         day_before = when - timedelta(days=1)
         diff_archive = self._get_diff_path(day_before, when)
         diff_data = diff_info.dump()
-        with tarfile.open(diff_archive, "w:gz") as tar:
-            size = len(tarfiles) + 1
-            with progress.Bar(expected_size=size) as bar:
-                diff_info = tarfile.TarInfo(name="diffinfo")
-                diff_info.size = len(diff_data)
-                tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
-                bar.show(1)
 
-                for info, data in tarfiles:
-                    if data is not None:
-                        tar.addfile(info, fileobj=io.BytesIO(data))
-                    else:
-                        tar.addfile(info)
-                    bar.show(bar.last_progress + 1)
+        def _arc(tar):
+            yield len(tarfiles) + 1
+            diff_info = tarfile.TarInfo(name="diffinfo")
+            diff_info.size = len(diff_data)
+            tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
+            yield "diffinfo"
+            for info, data in tarfiles:
+                if data is not None:
+                    tar.addfile(info, fileobj=io.BytesIO(data))
+                else:
+                    tar.addfile(info)
+                yield info
 
+        self._create_archive(diff_archive, _arc)
         msg = "=> %d new files, %d modified, %d deleted."
         logger.msg(msg % (new, changed, deleted))
         self._checksum(diff_archive)
