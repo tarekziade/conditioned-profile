@@ -27,125 +27,130 @@ def _tarinfo2mem(tar, tarinfo):
     return metadata, data
 
 
-def create_diff(profile_name, archives_dir, when, current, previous):
-    current_files = {}
-    previous_files = {}
-    diff_info = []
-    tarfiles = []
-    changed = 0
-    new = 0
-    deleted = 0
+class Archiver(object):
+    def __init__(self, profile_dir, archives_dir, pem_file=None,
+                 pem_password=None):
+        self.profile_dir = profile_dir
+        self.archives_dir = archives_dir
+        # reading metadata
+        with open(os.path.join(profile_dir, '.hp.json')) as f:
+            self.metadata = json.loads(f.read())
+        self.profile_name = self.metadata['name']
+        self.pem_file = pem_file
+        self.pem_password = pem_password
 
-    # reading all files and dirs
-    with tarfile.open(current, "r:gz") as tar:
-        for tarinfo in tar:
-            current_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
+    def _checksum(self, archive, sign=True):
+        checksum(archive, sign=True, pem_file=self.pem_file,
+                 pem_password=self.pem_password)
 
-    with tarfile.open(previous, "r:gz") as tar:
-        for tarinfo in tar:
-            previous_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
+    def _strftime(self, date, template='-%Y-%m-%d-hp.tar.gz'):
+        return date.strftime(self.profile_name + template)
 
-    diff_info = DiffInfo()
+    def _get_archive_path(self, when):
+        archive = self._strftime(when)
+        return os.path.join(self.archives_dir, archive)
 
-    for name, info in current_files.items():
-        if name not in previous_files:
-            diff_info.add_new(_b(name))
-            new += 1
-            tarfiles.append(info)
-        else:
-            old = previous_files[name][0].get_info()['chksum']
-            new = info[0].get_info()['chksum']
-            if old != new:
-                diff_info.add_changed(_b(name))
-                changed += 1
-                tarfiles.append(info)
+    def _get_diff_path(self, date1, date2):
+        date1 = date1.strftime('%Y-%m-%d')
+        date2 = date2.strftime('%Y-%m-%d')
+        arcname = self.profile_name + '-diff-%s-%s-hp.tar.gz' % (date1, date2)
+        return os.path.join(self.archives_dir, arcname)
 
-    for name, info in previous_files.items():
-        if name not in current_files:
-            diff_info.add_deleted(_b(name))
-            deleted += 1
+    def _create_archive(self, when, files=None):
+        if files is None:
+            files = glob.glob(os.path.join(self.profile_dir, "*"))
+        archive = self._get_archive_path(when)
+        with tarfile.open(archive, "w:gz") as tar:
+            size = len(files)
+            with progress.Bar(expected_size=size) as bar:
+                for filename in files:
+                    tar.add(filename, os.path.basename(filename))
+                    bar.show(bar.last_progress + 1)
+        self._checksum(archive)
+        return archive
 
-    day_before = when - timedelta(days=1)
-    diff_archive = profile_name + '-diff-%s-%s-hp.tar.gz'
-    diff_archive = diff_archive % (day_before.strftime('%Y-%m-%d'),
-                                   when.strftime('%Y-%m-%d'))
-    diff_archive = os.path.join(archives_dir, diff_archive)
-    diff_data = diff_info.dump()
+    def _update_symlinks(self, archive):
+        for suffix in ('.tar.gz', '.tar.gz.sha256', '.tar.gz.asc'):
+            path = os.path.join(self.archives_dir,
+                                self.profile_name + '-latest' + suffix)
+            if os.path.exists(path):
+                os.remove(path)
+            os.symlink(archive, path)
 
-    with tarfile.open(diff_archive, "w:gz") as tar:
-        size = len(tarfiles) + 1
-        with progress.Bar(expected_size=size) as bar:
-            diff_info = tarfile.TarInfo(name="diffinfo")
-            diff_info.size = len(diff_data)
-            tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
-            bar.show(1)
-
-            for info, data in tarfiles:
-                if data is not None:
-                    tar.addfile(info, fileobj=io.BytesIO(data))
-                else:
-                    tar.addfile(info)
-                bar.show(bar.last_progress + 1)
-
-    msg = "=> %d new files, %d modified, %d deleted."
-    logger.msg(msg % (new, changed, deleted))
-    return diff_archive
-
-
-def update_archives(profile_dir, archives_dir, when=None, pem_file=None,
-                    pem_password=None):
-    if when is None:
-        when = date.today()
-    # reading metadata
-    with open(os.path.join(profile_dir, '.hp.json')) as f:
-        metadata = json.loads(f.read())
-
-    profile_name = metadata['name']
-    day_before = when - timedelta(days=1)
-    archive = when.strftime(profile_name + '-%Y-%m-%d-hp.tar.gz')
-    logger.msg("Creating %s..." % archive)
-    archive = os.path.join(archives_dir, archive)
-
-    with tarfile.open(archive, "w:gz") as tar:
-        files = glob.glob(os.path.join(profile_dir, "*"))
-        size = len(files)
-        with progress.Bar(expected_size=size) as bar:
-            for filename in files:
-                tar.add(filename, os.path.basename(filename))
-                bar.show(bar.last_progress + 1)
-
-    checksum(archive, sign=True, pem_file=pem_file, pem_password=pem_password)
-    archive_hash = archive + '.sha256'
-    archive_asc = archive + '.asc'
-    logger.msg("Done.")
-
-    latest = os.path.join(archives_dir, profile_name + '-latest.tar.gz')
-    if os.path.exists(latest):
-        os.remove(latest)
-    os.symlink(archive, latest)
-
-    latest_hash = os.path.join(archives_dir,
-                               profile_name + '-latest.tar.gz.sha256')
-    if os.path.exists(latest_hash):
-        os.remove(latest_hash)
-    os.symlink(archive_hash, latest_hash)
-
-    latest_asc = os.path.join(archives_dir,
-                              profile_name + '-latest.tar.gz.asc')
-    if os.path.exists(latest_asc):
-        os.remove(latest_asc)
-    os.symlink(archive_asc, latest_asc)
-
-    previous = day_before.strftime(profile_name + '-%Y-%m-%d-hp.tar.gz')
-    previous = os.path.join(archives_dir, previous)
-
-    if os.path.exists(previous):
-        logger.msg("Creating a diff tarball with the previous day")
-        diff = create_diff(profile_name, archives_dir, when, archive,
-                           previous)
-        checksum(diff, sign=True, pem_file=pem_file,
-                 pem_password=pem_password)
+    def update(self, when=None):
+        if when is None:
+            when = date.today()
+        archive = self._create_archive(when)
+        logger.msg("Creating %s..." % archive)
+        self._update_symlinks(archive)
         logger.msg("Done.")
+        day_before = when - timedelta(days=1)
+        previous = self._get_archive_path(day_before)
+        if os.path.exists(previous):
+            logger.msg("Creating a diff tarball with the previous day")
+            self.create_diff(when, archive, previous)
+            logger.msg("Done.")
+
+    def create_diff(self, when, current, previous):
+        current_files = {}
+        previous_files = {}
+        diff_info = []
+        tarfiles = []
+        changed = 0
+        new = 0
+        deleted = 0
+
+        # reading all files and dirs
+        with tarfile.open(current, "r:gz") as tar:
+            for tarinfo in tar:
+                current_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
+
+        with tarfile.open(previous, "r:gz") as tar:
+            for tarinfo in tar:
+                previous_files[tarinfo.name] = _tarinfo2mem(tar, tarinfo)
+
+        diff_info = DiffInfo()
+
+        for name, info in current_files.items():
+            if name not in previous_files:
+                diff_info.add_new(_b(name))
+                new += 1
+                tarfiles.append(info)
+            else:
+                old = previous_files[name][0].get_info()['chksum']
+                new = info[0].get_info()['chksum']
+                if old != new:
+                    diff_info.add_changed(_b(name))
+                    changed += 1
+                    tarfiles.append(info)
+
+        for name, info in previous_files.items():
+            if name not in current_files:
+                diff_info.add_deleted(_b(name))
+                deleted += 1
+
+        day_before = when - timedelta(days=1)
+        diff_archive = self._get_diff_path(day_before, when)
+        diff_data = diff_info.dump()
+        with tarfile.open(diff_archive, "w:gz") as tar:
+            size = len(tarfiles) + 1
+            with progress.Bar(expected_size=size) as bar:
+                diff_info = tarfile.TarInfo(name="diffinfo")
+                diff_info.size = len(diff_data)
+                tar.addfile(diff_info, fileobj=io.BytesIO(diff_data))
+                bar.show(1)
+
+                for info, data in tarfiles:
+                    if data is not None:
+                        tar.addfile(info, fileobj=io.BytesIO(data))
+                    else:
+                        tar.addfile(info)
+                    bar.show(bar.last_progress + 1)
+
+        msg = "=> %d new files, %d modified, %d deleted."
+        logger.msg(msg % (new, changed, deleted))
+        self._checksum(diff_archive)
+        return diff_archive
 
 
 def main(args=sys.argv[1:]):
@@ -166,8 +171,10 @@ def main(args=sys.argv[1:]):
     if not os.path.exists(args.archives_dir):
         logger.msg("%r does not exists." % args.archives_dir)
         sys.exit(1)
-    update_archives(args.profile_dir, args.archives_dir, when,
-                    args.pem_file, args.pem_password)
+
+    archiver = Archiver(args.profile_dir, args.archives_dir,
+                        args.pem_file, args.pem_password)
+    archiver.update(when)
 
 
 if __name__ == "__main__":

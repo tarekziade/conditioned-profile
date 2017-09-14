@@ -8,7 +8,7 @@ import tarfile
 from collections import namedtuple
 
 from heavyprofile.util import fresh_profile
-from heavyprofile.archiver import update_archives
+from heavyprofile.archiver import Archiver
 from heavyprofile.creator import build_profile
 
 
@@ -31,6 +31,10 @@ class TestArchiver(unittest.TestCase):
         args.max_urls = 2
         args.pem_file = PEM_FILE
         args.pem_password = PEM_PASS
+        args.profile_dir = self.profile_dir
+        args.archives_dir = self.archives_dir
+        self.archiver = Archiver(args.profile_dir, args.archives_dir,
+                                 args.pem_file, args.pem_password)
 
     def _diff_name(self, now=None, then=None):
         if now is None:
@@ -47,8 +51,7 @@ class TestArchiver(unittest.TestCase):
 
     def test_simple_archiving(self):
         # this creates a simple archive and updates the latest sl
-        update_archives(self.profile_dir, self.archives_dir, None, PEM_FILE,
-                        PEM_PASS)
+        self.archiver.update()
 
         res = os.listdir(self.archives_dir)
         res.sort()
@@ -80,9 +83,7 @@ class TestArchiver(unittest.TestCase):
                 wanted.append(self._diff_name(when) + '.sha256')
                 wanted.append(self._diff_name(when) + '.asc')
 
-            update_archives(self.profile_dir, self.archives_dir, when,
-                            PEM_FILE,
-                            PEM_PASS)
+            self.archiver.update(when)
 
         wanted.sort()
         res = os.listdir(self.archives_dir)
@@ -95,9 +96,7 @@ class TestArchiver(unittest.TestCase):
         yesterday = today - timedelta(days=1)
         _2_days_ago = today - timedelta(days=2)
 
-        update_archives(self.profile_dir, self.archives_dir, _2_days_ago,
-                        PEM_FILE, PEM_PASS)
-
+        self.archiver.update(_2_days_ago)
         # then we do some browsing
         loop = asyncio.get_event_loop()
         try:
@@ -106,8 +105,7 @@ class TestArchiver(unittest.TestCase):
             loop.close()
 
         # a new archive will create a diff
-        update_archives(self.profile_dir, self.archives_dir, yesterday,
-                        PEM_FILE, PEM_PASS)
+        self.archiver.update(yesterday)
         diffname = self._diff_name(yesterday, _2_days_ago)
         diffname = os.path.join(self.archives_dir, diffname)
 
@@ -126,8 +124,7 @@ class TestArchiver(unittest.TestCase):
         self.assertTrue(len(diff) > 100)
 
         # let's do it again with today/yesterday
-        update_archives(self.profile_dir, self.archives_dir, today,
-                        PEM_FILE, PEM_PASS)
+        self.archiver.update(today)
         diffname = self._diff_name(today, yesterday)
         diffname = os.path.join(self.archives_dir, diffname)
 
