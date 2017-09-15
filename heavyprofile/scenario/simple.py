@@ -30,16 +30,44 @@ def _build_url_list():
 
 
 _build_url_list()
+_TAB_OPEN = "window.open();"
+
+
+class TabSwitcher(object):
+    def __init__(self, session):
+        self.handles = None
+        self.current = 0
+        self.session = session
+
+    async def switch(self):
+        session = self.session
+        if self.handles is None:
+            self.handles = await session.get_window_handles()
+            self.current = 0
+
+        handle = self.handles[self.current]
+        if self.current == len(self.handles) - 1:
+            self.current = 0
+        else:
+            self.current += 1
+        await session.switch_to_window(handle)
 
 
 async def simple(session, args):
     metadata = {}
     max = args.max_urls
+    # open 20 tabs
+    for i in range(20):
+        await session.execute_script(_TAB_OPEN)
+
+    tabs = TabSwitcher(session)
+
     for current, url in enumerate(URL_LIST):
         logger.visit_url(index=current+1, total=max, url=url)
         await session.get(url)
         if max != -1 and current + 1 == max:
             break
+        await tabs.switch()
 
     metadata['visited_url'] = current
     return metadata
