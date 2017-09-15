@@ -68,7 +68,7 @@ def main(args=sys.argv[1:]):
 
     loop = asyncio.get_event_loop()
     with latest_nightly(args.firefox) as binary:
-        args.binary = binary
+        args.firefox = os.path.abspath(binary)
         try:
             loop.run_until_complete(build_profile(args))
         finally:

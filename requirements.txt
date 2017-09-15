@@ -1,4 +1,4 @@
--e git+https://github.com/tarekziade/arsenic.git#egg=arsenic
+git+https://github.com/tarekziade/arsenic.git@windows
 requests
 clint
 beautifulsoup4

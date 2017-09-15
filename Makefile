@@ -24,3 +24,9 @@ test: build
 
 docs:  build
 	$(BIN)/tox -e docs
+
+docker-build:
+	docker build -t heavyprofile/dev:latest .
+
+docker-run:
+	docker run -i heavyprofile/dev:latest

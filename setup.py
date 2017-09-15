@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 
-install_requires = ["arsenic", "requests", "clint",
+install_requires = ["requests", "clint",
                     "cryptography"]
 
 
