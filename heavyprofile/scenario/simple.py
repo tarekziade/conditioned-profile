@@ -69,5 +69,5 @@ async def simple(session, args):
             break
         await tabs.switch()
 
-    metadata['visited_url'] = current
+    metadata['visited_url'] = current + 1
     return metadata

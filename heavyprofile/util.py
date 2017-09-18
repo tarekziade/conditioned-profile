@@ -86,14 +86,15 @@ def download_file(url, target=None, check_file=True):
                     current_etag = f.read()
             if etag == current_etag:
                 logger.msg("Already Downloaded")
+                # should at least check the size?
+                return target
 
-            # should at least check the size?
-            return target
-
-        existing = signer.checksum(target)
-        if existing == check:
-            logger.msg("Already Downloaded")
-            return target
+            logger.msg("Changed!")
+        else:
+            existing = signer.checksum(target)
+            if existing == check:
+                logger.msg("Already Downloaded")
+                return target
 
     logger.msg("Downloading %s" % url)
     req = requests.get(url, stream=True)
@@ -128,9 +129,9 @@ def latest_nightly(binary=None):
 
         # on macOs we just mount the DMG
         if platform.system() == 'Darwin':
-            cmd = "hdiutil attach -mountpoint /Volumes/Firefox %s"
+            cmd = "hdiutil attach -mountpoint /Volumes/Nightly %s"
             os.system(cmd % target)
-            binary = ('/Volumes/Firefox/FirefoxNightly.app'
+            binary = ('/Volumes/Nightly/FirefoxNightly.app'
                       '/Contents/MacOS/firefox')
         # on linux we unpack it
         elif platform.system() == 'Linux':
@@ -150,7 +151,7 @@ def latest_nightly(binary=None):
             if platform.system() == 'Darwin':
                 logger.msg("Unmounting Firefox")
                 time.sleep(10)
-                os.system("hdiutil detach /Volumes/Firefox")
+                os.system("hdiutil detach /Volumes/Nightly")
             elif platform.system() == 'Linux':
                 # XXX we should keep it for next time
                 shutil.rmtree('firefox')

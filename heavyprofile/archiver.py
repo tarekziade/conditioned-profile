@@ -13,6 +13,8 @@ import json
 from heavyprofile import logger
 from heavyprofile.diffinfo import DiffInfo
 from heavyprofile.signing import Signer
+from heavyprofile.util import check_exists, download_file
+
 from clint.textui import progress
 
 
@@ -30,7 +32,8 @@ def _tarinfo2mem(tar, tarinfo):
 
 class Archiver(object):
     def __init__(self, profile_dir, archives_dir, pem_file=None,
-                 pem_password=None):
+                 pem_password=None, archives_server=None):
+        self.archives_server = archives_server
         self.profile_dir = profile_dir
         self.archives_dir = archives_dir
         # reading metadata
@@ -49,7 +52,7 @@ class Archiver(object):
 
     def _get_archive_path(self, when):
         archive = self._strftime(when)
-        return os.path.join(self.archives_dir, archive)
+        return os.path.join(self.archives_dir, archive), archive
 
     def _get_diff_path(self, date1, date2):
         date1 = date1.strftime('%Y-%m-%d')
@@ -70,7 +73,7 @@ class Archiver(object):
         if isinstance(when, str):
             archive = when
         else:
-            archive = self._get_archive_path(when)
+            archive, __ = self._get_archive_path(when)
 
         with tarfile.open(archive, "w:gz") as tar:
             it = iterator(tar)
@@ -90,6 +93,14 @@ class Archiver(object):
                 os.remove(path)
             os.symlink(archive, path)
 
+    def _check_server(self, archive, target):
+        if self.archives_server is None:
+            return
+        url = self.archives_server + '/' + archive
+        exists, __ = check_exists(url)
+        if exists:
+            download_file(url, target, check_file=False)
+
     def update(self, when=None):
         if when is None:
             when = date.today()
@@ -98,7 +109,10 @@ class Archiver(object):
         self._update_symlinks(archive)
         logger.msg("Done.")
         day_before = when - timedelta(days=1)
-        previous = self._get_archive_path(day_before)
+        previous, previous_fn = self._get_archive_path(day_before)
+        if not os.path.exists(previous_fn):
+            self._check_server(previous_fn, previous)
+
         if os.path.exists(previous):
             logger.msg("Creating a diff tarball with the previous day")
             self.create_diff(when, archive, previous)
@@ -151,7 +165,11 @@ def main(args=sys.argv[1:]):
                         default='heavyprofile/tests/key.pem')
     parser.add_argument('--pem-password', help='pem password', type=str,
                         default='password')
+    parser.add_argument('--archives-server', help="Archives server",
+                        type=str,
+                        default='http://heavyprofile.dev.mozaws.net')
     args = parser.parse_args(args=args)
+    args.pem_password = bytes(args.pem_password, 'utf8')
 
     when = date.today()
     if args.prior > 0:
@@ -162,7 +180,8 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
 
     archiver = Archiver(args.profile_dir, args.archives_dir,
-                        args.pem_file, args.pem_password)
+                        args.pem_file, args.pem_password,
+                        args.archives_server)
     archiver.update(when)
 
 
