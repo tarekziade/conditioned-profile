@@ -19,7 +19,6 @@ tasks:
         'public':
           type: 'directory'
           path: '/app/archives'
-          expires: '7 days'
     metadata:
       name: HeavyProfile
       description: Heavy Profile Generator
