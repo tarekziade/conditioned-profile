@@ -101,7 +101,7 @@ def download_file(url, target=None, check_file=True):
     req = requests.get(url, stream=True)
     total_length = int(req.headers.get('content-length'))
     target_dir = os.path.dirname(target)
-    if not os.path.exists(target_dir):
+    if target_dir != '' and not os.path.exists(target_dir):
         os.makedirs(target_dir)
     with open(target, 'wb') as f:
         iter = req.iter_content(chunk_size=1024)
