@@ -1,6 +1,8 @@
 Heavy Profile
 =============
 
+.
+
 The project is built in two parts:
 
 - **hp-creator** a script to create a Firefox "heavy" profile
