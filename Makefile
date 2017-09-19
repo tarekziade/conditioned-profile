@@ -26,7 +26,7 @@ docs:  build
 	$(BIN)/tox -e docs
 
 docker-build:
-	docker build -t heavyprofile/dev:latest .
+	sudo docker build -t heavyprofile/dev:latest .
 
 docker-run:
-	docker run -i heavyprofile/dev:latest
+	sudo docker run --rm -it heavyprofile/dev:latest
