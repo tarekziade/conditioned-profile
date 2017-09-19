@@ -1,6 +1,7 @@
 import random
 import os
 from heavyprofile import logger
+import asyncio
 
 
 WORDS = os.path.join(os.path.dirname(__file__), 'words.txt')
@@ -64,9 +65,13 @@ async def simple(session, args):
 
     for current, url in enumerate(URL_LIST):
         logger.visit_url(index=current+1, total=max, url=url)
-        await session.get(url)
-        if max != -1 and current + 1 == max:
-            break
+        try:
+            await session.get(url)
+        except asyncio.TimeoutError:
+            pass
+        else: 
+            if max != -1 and current + 1 == max:
+                break
         await tabs.switch()
 
     metadata['visited_url'] = current + 1
