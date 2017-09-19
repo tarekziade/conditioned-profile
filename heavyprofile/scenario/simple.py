@@ -1,3 +1,4 @@
+import aiohttp
 import random
 import os
 from heavyprofile import logger
@@ -65,13 +66,14 @@ async def simple(session, args):
 
     for current, url in enumerate(URL_LIST):
         logger.visit_url(index=current+1, total=max, url=url)
-        try:
-            await session.get(url)
-        except asyncio.TimeoutError:
-            pass
-        else: 
-            if max != -1 and current + 1 == max:
-                break
+        with aiohttp.Timeout(5):
+            try:
+                await session.get(url)
+            except asyncio.TimeoutError:
+                pass
+            else:
+                if max != -1 and current + 1 == max:
+                    break
         await tabs.switch()
 
     metadata['visited_url'] = current + 1
