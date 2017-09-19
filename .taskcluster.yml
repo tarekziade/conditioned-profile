@@ -13,8 +13,9 @@ tasks:
       maxRunTime: 3600
       image: tarekziade/heavyprofile
       command:
-          - "hp-creator /app/profile"
-          - "hp-archiver /app/profile /app/archives"
+          - "/bin/bash"
+          - "-c"
+          - "hp-creator --max-urls 10 /app/profile && hp-archiver /app/profile /app/archives"
       artifacts:
         'public':
           type: 'directory'
