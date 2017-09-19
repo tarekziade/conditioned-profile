@@ -82,12 +82,13 @@ def download_file(url, target=None, check_file=True):
     if os.path.exists(target):
         if not check_file:
             if etag is not None:
-                with open(target + '.etag') as f:
-                    current_etag = f.read()
-            if etag == current_etag:
-                logger.msg("Already Downloaded")
-                # should at least check the size?
-                return target
+                if os.path.exists(target + '.etag'):
+                    with open(target + '.etag') as f:
+                        current_etag = f.read()
+                    if etag == current_etag:
+                        logger.msg("Already Downloaded")
+                        # should at least check the size?
+                        return target
 
             logger.msg("Changed!")
         else:
@@ -99,7 +100,9 @@ def download_file(url, target=None, check_file=True):
     logger.msg("Downloading %s" % url)
     req = requests.get(url, stream=True)
     total_length = int(req.headers.get('content-length'))
-
+    target_dir = os.path.dirname(target)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
     with open(target, 'wb') as f:
         iter = req.iter_content(chunk_size=1024)
         size = total_length / 1024 + 1
