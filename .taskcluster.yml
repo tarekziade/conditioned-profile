@@ -10,6 +10,11 @@ tasks:
       maxRunTime: 3600
       image: tarekziade/heavyprofile
       command:  hp-creator /app/profile && hp-archiver /app/profile /app/archives
+      artifacts:
+        'public':
+          type: 'directory'
+          path: '/app/archives'
+          expires: '{{#from_now}}7 days{{/from_now}}'
     metadata:
       name: HeavyProfile
       description: Heavy Profile Generator
