@@ -10,11 +10,11 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckod
 RUN tar -xzvf geckodriver-v0.18.0-linux64.tar.gz
 RUN mkdir /app/archives
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install --upgrade -r requirements.txt
-
-COPY . /app
-RUN cd /app; git pull
-RUN python setup.py develop
 ENV PATH "$PATH:/app"
-CMD hp-creator --max-urls 10 /app/profile && hp-archiver /app/profile /app/archives
+
+CMD git clone https://github.com/tarekziade/heavy-profile && \
+	cd heavy-profile && \
+	pip install --upgrade -r requirements.txt && \
+	python setup.py develop && \
+	hp-creator --max-urls 10 /app/profile && \
+	hp-archiver /app/profile /app/archives
