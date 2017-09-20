@@ -30,17 +30,26 @@ class CustomGeckodriver(Geckodriver):
         )
 
 
+TC_LINK = ('https://index.taskcluster.net/v1/task/garbage.heavyprofile/'
+           'artifacts/public/today-%s.tgz')
+
+
 async def build_profile(args):
     scenarii = scenario[args.scenarii]
 
     # getting the latest archive from the server
-    url = args.archives_server + '/%s-latest.tar.gz' % args.scenarii
+    if TASK_CLUSTER:
+        url = TC_LINK % args.scenarii
+        basename = 'today-%s.tgz' % args.scenarii
+    else:
+        basename = '%s-latest.tar.gz' % args.scenarii
+        url = args.archives_server + '/%s' % basename
+
     exists, headers = check_exists(url)
     metadata = {}
 
     if exists:
-        target = os.path.join(args.archives_dir, '%s-latest.tar.gz' %
-                              args.scenarii)
+        target = os.path.join(args.archives_dir, basename)
         archive = download_file(url, target=target, check_file=False)
         with tarfile.open(archive, "r:gz") as tar:
             logger.msg("Checking the tarball content...")
