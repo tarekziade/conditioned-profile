@@ -4,7 +4,7 @@ tasks:
   - provisionerId: '{{ taskcluster.docker.provisionerId }}'
     workerType: '{{ taskcluster.docker.workerType }}'
     routes:
-      - index.project.heavyprofile
+      - index.garbage.heavyprofile
     extra:
       github:
         events:
