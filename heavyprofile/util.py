@@ -62,7 +62,7 @@ def check_exists(archive, server=None):
     if server is not None:
         archive = server + '/' + archive
     resp = requests.head(archive)
-    return resp.status_code == 200, resp.headers
+    return resp.status_code in (303, 200), resp.headers
 
 
 def download_file(url, target=None, check_file=True):
