@@ -14,10 +14,7 @@ from heavyprofile.signing import Signer
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
-
-#TASK_CLUSTER = 'TASK_ID' in os.environ
-TASK_CLUSTER = True
-print(os.environ.items())
+TASK_CLUSTER = 'TASKCLUSTER_WORKER_TYPE' in os.environ.keys()
 
 
 class ArchiveNotFound(Exception):
@@ -108,12 +105,18 @@ def download_file(url, target=None, check_file=True):
     if target_dir != '' and not os.path.exists(target_dir):
         os.makedirs(target_dir)
     with open(target, 'wb') as f:
-        iter = req.iter_content(chunk_size=1024)
-        size = total_length / 1024 + 1
-        for chunk in progress.bar(iter, expected_size=size):
-            if chunk:
-                f.write(chunk)
-                f.flush()
+        if TASK_CLUSTER:
+            for chunk in req.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+                    f.flush()
+        else:
+            iter = req.iter_content(chunk_size=1024)
+            size = total_length / 1024 + 1
+            for chunk in progress.bar(iter, expected_size=size):
+                if chunk:
+                    f.write(chunk)
+                    f.flush()
 
     if etag is not None:
         with open(target + '.etag', 'w') as f:

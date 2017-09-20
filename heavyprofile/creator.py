@@ -19,7 +19,6 @@ from heavyprofile.scenario import scenario
 from clint.textui import progress
 
 
-
 class CustomGeckodriver(Geckodriver):
     async def start(self):
         port = free_port()
@@ -53,8 +52,9 @@ async def build_profile(args):
                     try:
                         return self.old(*args, **kw)
                     finally:
-                        if args[0].name == ".hp.json":
-                            import pdb; pdb.set_trace()
+                        pass
+                        # if args[0].name == ".hp.json":
+                        #   import pdb; pdb.set_trace()
 
                 tar.old = tar.extract
                 tar.extract = functools.partial(_extract, tar)
