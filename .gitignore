@@ -6,6 +6,10 @@ __pycache__
 .coverage
 .tox/
 bin/
+src/
+*.tar.gz*
+*.dmg
+*.dmg.*
 heavy_profile.egg-info
 include/
 lib
