@@ -14,6 +14,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade -r requirements.txt
 
 COPY . /app
+RUN cd /app; git pull
 RUN python setup.py develop
 ENV PATH "$PATH:/app"
 CMD hp-creator --max-urls 10 /app/profile && hp-archiver /app/profile /app/archives

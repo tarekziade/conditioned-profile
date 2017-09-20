@@ -26,7 +26,13 @@ docs:  build
 	$(BIN)/tox -e docs
 
 docker-build:
-	sudo docker build -t heavyprofile/dev:latest .
+	sudo docker build -t heavyprofile:latest .
 
 docker-run:
-	sudo docker run --rm -it heavyprofile/dev:latest
+	sudo docker run --name heavyprofile --rm -it heavyprofile:latest
+
+docker-push:
+	sudo docker login
+	sudo docker run --name heavyprofile -it heavyprofile:latest ls 
+	sudo docker commit -m "savepoint" -a "heavyprofile" heavyprofile tarekziade/heavyprofile:latest
+	sudo docker push tarekziade/heavyprofile
