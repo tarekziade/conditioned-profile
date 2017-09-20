@@ -101,6 +101,7 @@ class Archiver(object):
             if os.path.exists(path):
                 os.remove(path)
             os.symlink(archive, path)
+            logger.msg("%r symlinked at %r" % (archive, path))
 
     def _check_server(self, archive, target):
         if self.archives_server is None:
@@ -114,7 +115,7 @@ class Archiver(object):
         if when is None:
             when = date.today()
         archive = self._create_archive(when)
-        logger.msg("Creating %s..." % archive)
+        logger.msg("Creating symlinks for %s..." % archive)
         self._update_symlinks(archive)
         logger.msg("Done.")
         day_before = when - timedelta(days=1)
