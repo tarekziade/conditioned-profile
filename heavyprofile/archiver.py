@@ -13,7 +13,7 @@ import json
 from heavyprofile import logger
 from heavyprofile.diffinfo import DiffInfo
 from heavyprofile.signing import Signer
-from heavyprofile.util import check_exists, download_file
+from heavyprofile.util import check_exists, download_file, TASK_CLUSTER
 
 from clint.textui import progress
 
@@ -24,9 +24,13 @@ def _b(data):
 
 def _tarinfo2mem(tar, tarinfo):
     metadata = copy.copy(tarinfo)
-    data = tar.extractfile(tarinfo)
-    if data is not None:
-        data = data.read()
+    try:
+        data = tar.extractfile(tarinfo)
+        if data is not None:
+            data = data.read()
+    except Exception:
+        data = None
+
     return metadata, data
 
 
@@ -80,7 +84,8 @@ class Archiver(object):
             size = next(it)
             with progress.Bar(expected_size=size) as bar:
                 for filename in it:
-                    bar.show(bar.last_progress + 1)
+                    if not TASK_CLUSTER:
+                        bar.show(bar.last_progress + 1)
 
         self._checksum(archive)
         return archive
@@ -99,7 +104,7 @@ class Archiver(object):
         url = self.archives_server + '/' + archive
         exists, __ = check_exists(url)
         if exists:
-            download_file(url, target, check_file=False)
+            download_file(url, target, check_file=True)
 
     def update(self, when=None):
         if when is None:

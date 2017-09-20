@@ -12,11 +12,12 @@ from arsenic.browsers import Firefox
 from arsenic.services import Geckodriver, free_port, subprocess_based_service
 
 from heavyprofile.util import fresh_profile, latest_nightly
-from heavyprofile.util import check_exists, download_file
+from heavyprofile.util import check_exists, download_file, TASK_CLUSTER
 from heavyprofile import logger
 from heavyprofile.scenario import scenario
 
 from clint.textui import progress
+
 
 
 class CustomGeckodriver(Geckodriver):
@@ -47,7 +48,8 @@ async def build_profile(args):
             size = len(list(tar))
             with progress.Bar(expected_size=size) as bar:
                 def _extract(self, *args, **kw):
-                    bar.show(bar.last_progress + 1)
+                    if not TASK_CLUSTER:
+                        bar.show(bar.last_progress + 1)
                     try:
                         return self.old(*args, **kw)
                     finally:

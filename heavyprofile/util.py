@@ -14,6 +14,7 @@ from heavyprofile.signing import Signer
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
+TASK_CLUSTER = 'TASK_ID' in os.environ
 
 
 class ArchiveNotFound(Exception):
