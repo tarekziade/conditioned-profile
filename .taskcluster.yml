@@ -22,7 +22,7 @@ tasks:
             cd heavy-profile &&
             pip install --quiet --upgrade -r requirements.txt &&
             python setup.py develop &&
-            hp-creator --max-urls 10 /app/profile &&
+            hp-creator --max-urls 115 /app/profile &&
             hp-archiver /app/profile /app/archives
       artifacts:
         'public':

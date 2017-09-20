@@ -16,5 +16,5 @@ CMD git clone https://github.com/tarekziade/heavy-profile && \
 	cd heavy-profile && \
 	pip install --upgrade -r requirements.txt && \
 	python setup.py develop && \
-	hp-creator --max-urls 10 /app/profile && \
+	hp-creator --max-urls 115 /app/profile && \
 	hp-archiver /app/profile /app/archives
