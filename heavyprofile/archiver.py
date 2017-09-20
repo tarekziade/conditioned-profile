@@ -115,8 +115,14 @@ class Archiver(object):
         if when is None:
             when = date.today()
         archive = self._create_archive(when)
+
+        # for now in task cluster we just generate the latest profile
+        if TASK_CLUSTER:
+            return
+
         logger.msg("Creating symlinks for %s..." % archive)
         self._update_symlinks(archive)
+
         logger.msg("Done.")
         day_before = when - timedelta(days=1)
         previous, previous_fn = self._get_archive_path(day_before)
@@ -181,9 +187,12 @@ def main(args=sys.argv[1:]):
     args = parser.parse_args(args=args)
     args.pem_password = bytes(args.pem_password, 'utf8')
 
-    when = date.today()
-    if args.prior > 0:
-        when = when - timedelta(days=args.prior)
+    if TASK_CLUSTER:
+        when = os.path.join(args.archives_dir, 'today.tgz')
+    else:
+        when = date.today()
+        if args.prior > 0:
+            when = when - timedelta(days=args.prior)
 
     if not os.path.exists(args.archives_dir):
         logger.msg("%r does not exists." % args.archives_dir)
