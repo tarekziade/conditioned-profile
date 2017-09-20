@@ -187,13 +187,6 @@ def main(args=sys.argv[1:]):
     args = parser.parse_args(args=args)
     args.pem_password = bytes(args.pem_password, 'utf8')
 
-    if TASK_CLUSTER:
-        when = os.path.join(args.archives_dir, 'today.tgz')
-    else:
-        when = date.today()
-        if args.prior > 0:
-            when = when - timedelta(days=args.prior)
-
     if not os.path.exists(args.archives_dir):
         logger.msg("%r does not exists." % args.archives_dir)
         sys.exit(1)
@@ -201,6 +194,15 @@ def main(args=sys.argv[1:]):
     archiver = Archiver(args.profile_dir, args.archives_dir,
                         args.pem_file, args.pem_password,
                         args.archives_server)
+
+    if TASK_CLUSTER:
+        name = 'today-%s.tgz' % archiver.profile_name
+        when = os.path.join(args.archives_dir, name)
+    else:
+        when = date.today()
+        if args.prior > 0:
+            when = when - timedelta(days=args.prior)
+
     archiver.update(when)
 
 
