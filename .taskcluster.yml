@@ -3,6 +3,8 @@ allowPullRequests: collaborators
 tasks:
   - provisionerId: '{{ taskcluster.docker.provisionerId }}'
     workerType: '{{ taskcluster.docker.workerType }}'
+    routes:
+      - index.project.heavyprofile
     extra:
       github:
         events:
