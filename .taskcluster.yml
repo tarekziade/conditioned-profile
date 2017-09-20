@@ -3,8 +3,10 @@ allowPullRequests: collaborators
 tasks:
   - provisionerId: '{{ taskcluster.docker.provisionerId }}'
     workerType: '{{ taskcluster.docker.workerType }}'
+    scopes:
+      - queue:route:index.project.heavyprofile
     routes:
-      - index.garbage.heavyprofile
+      - index.project.heavyprofile
       - "notify.email.tarek@ziade.org.on-any"
     extra:
       github:
