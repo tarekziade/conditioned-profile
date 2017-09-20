@@ -3,10 +3,9 @@ allowPullRequests: collaborators
 tasks:
   - provisionerId: '{{ taskcluster.docker.provisionerId }}'
     workerType: '{{ taskcluster.docker.workerType }}'
-    scopes:
-      - queue:get-artifact:public
     routes:
       - index.garbage.heavyprofile
+      - "notify.email.tarek@ziade.org.on-any"
     extra:
       github:
         events:
