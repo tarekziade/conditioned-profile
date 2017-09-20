@@ -70,8 +70,12 @@ class Archiver(object):
                 files = glob.glob(os.path.join(self.profile_dir, "*"))
                 yield len(files)
                 for filename in files:
-                    tar.add(filename, os.path.basename(filename))
-                    yield filename
+                    try:
+                        tar.add(filename, os.path.basename(filename))
+                        yield filename
+                    except FileNotFoundError:
+                        # locks and such
+                        pass
             iterator = _files
 
         if isinstance(when, str):
@@ -79,7 +83,7 @@ class Archiver(object):
         else:
             archive, __ = self._get_archive_path(when)
 
-        with tarfile.open(archive, "w:gz") as tar:
+        with tarfile.open(archive, "w:gz", dereference=True) as tar:
             it = iterator(tar)
             size = next(it)
             with progress.Bar(expected_size=size) as bar:
