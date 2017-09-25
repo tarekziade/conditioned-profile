@@ -25,7 +25,7 @@ tasks:
             hp-creator --max-urls 115 /app/profile &&
             hp-archiver /app/profile /app/archives
       artifacts:
-        'public':
+        public:
           type: 'directory'
           path: '/app/archives'
     metadata:
