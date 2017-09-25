@@ -63,18 +63,24 @@ async def simple(session, args):
         await session.execute_script(_TAB_OPEN)
 
     tabs = TabSwitcher(session)
+    visited = 0
 
     for current, url in enumerate(URL_LIST):
         logger.visit_url(index=current+1, total=max, url=url)
-        with aiohttp.Timeout(5):
+        retries = 0
+        while retries < 3:
             try:
-                await session.get(url)
+                with aiohttp.Timeout(5):
+                    await session.get(url)
+                visited += 1
+                break
             except asyncio.TimeoutError:
-                pass
-            else:
-                if max != -1 and current + 1 == max:
-                    break
+                retries += 1
+
+        if max != -1 and current + 1 == max:
+            break
+
         await tabs.switch()
 
-    metadata['visited_url'] = current + 1
+    metadata['visited_url'] = visited
     return metadata
