@@ -70,8 +70,7 @@ async def simple(session, args):
         retries = 0
         while retries < 3:
             try:
-                with aiohttp.Timeout(5):
-                    await session.get(url)
+                await asyncio.wait_for(session.get(url), 5)
                 visited += 1
                 break
             except asyncio.TimeoutError:

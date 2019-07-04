@@ -37,15 +37,18 @@ TC_LINK = ('https://index.taskcluster.net/v1/task/garbage.condprof/'
 async def build_profile(args):
     scenarii = scenario[args.scenarii]
 
-    # getting the latest archive from the server
-    if TASK_CLUSTER:
-        url = TC_LINK % args.scenarii
-        basename = 'today-%s.tgz' % args.scenarii
+    if args.force_new:
+        exists = False
     else:
-        basename = '%s-latest.tar.gz' % args.scenarii
-        url = args.archives_server + '/%s' % basename
+        # getting the latest archive from the server
+        if TASK_CLUSTER:
+            url = TC_LINK % args.scenarii
+            basename = 'today-%s.tgz' % args.scenarii
+        else:
+            basename = '%s-latest.tar.gz' % args.scenarii
+            url = args.archives_server + '/%s' % basename
+        exists, __ = check_exists(url)
 
-    exists, headers = check_exists(url)
     metadata = {}
 
     if exists:
@@ -111,6 +114,8 @@ def main(args=sys.argv[1:]):
     parser.add_argument('--archives-dir', help="Archives local dir",
                         type=str,
                         default='/tmp/archives')
+    parser.add_argument('--force-new', help="Create from scratch",
+                        type=bool, default=False)
 
     args = parser.parse_args(args=args)
     if not os.path.exists(args.profile):

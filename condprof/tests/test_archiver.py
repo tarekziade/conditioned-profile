@@ -32,6 +32,8 @@ class TestArchiver(unittest.TestCase):
         args.pem_file = PEM_FILE
         args.pem_password = PEM_PASS
         args.profile_dir = self.profile_dir
+        args.archives_server = None
+        args.force_new = True
         args.archives_dir = self.archives_dir
         self.archiver = Archiver(args.profile_dir, args.archives_dir,
                                  args.pem_file, args.pem_password)
