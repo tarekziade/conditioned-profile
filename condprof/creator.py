@@ -11,10 +11,10 @@ from arsenic import get_session
 from arsenic.browsers import Firefox
 from arsenic.services import Geckodriver, free_port, subprocess_based_service
 
-from heavyprofile.util import fresh_profile, latest_nightly
-from heavyprofile.util import check_exists, download_file, TASK_CLUSTER
-from heavyprofile import logger
-from heavyprofile.scenario import scenario
+from condprof.util import fresh_profile, latest_nightly
+from condprof.util import check_exists, download_file, TASK_CLUSTER
+from condprof import logger
+from condprof.scenario import scenario
 
 from clint.textui import progress
 
@@ -30,7 +30,7 @@ class CustomGeckodriver(Geckodriver):
         )
 
 
-TC_LINK = ('https://index.taskcluster.net/v1/task/garbage.heavyprofile/'
+TC_LINK = ('https://index.taskcluster.net/v1/task/garbage.condprof/'
            'artifacts/public/today-%s.tgz')
 
 
@@ -105,7 +105,7 @@ def main(args=sys.argv[1:]):
                         type=str, default='simple')
     parser.add_argument('--archives-server', help="Archives server",
                         type=str,
-                        default='http://heavyprofile.dev.mozaws.net')
+                        default='http://condprof.dev.mozaws.net')
     parser.add_argument('--fresh-profile', help='Create a fresh profile',
                         action='store_true', default=False)
     parser.add_argument('--archives-dir', help="Archives local dir",

@@ -10,10 +10,10 @@ from datetime import date, timedelta
 import copy
 import json
 
-from heavyprofile import logger
-from heavyprofile.diffinfo import DiffInfo
-from heavyprofile.signing import Signer
-from heavyprofile.util import check_exists, download_file, TASK_CLUSTER
+from condprof import logger
+from condprof.diffinfo import DiffInfo
+from condprof.signing import Signer
+from condprof.util import check_exists, download_file, TASK_CLUSTER
 
 from clint.textui import progress
 
@@ -178,12 +178,12 @@ def main(args=sys.argv[1:]):
     parser.add_argument('archives_dir', help='Archives Dir', type=str)
     parser.add_argument('--prior', help='Prior', type=int, default=0)
     parser.add_argument('--pem-file', help='pem file', type=str,
-                        default='heavyprofile/tests/key.pem')
+                        default='condprof/tests/key.pem')
     parser.add_argument('--pem-password', help='pem password', type=str,
                         default='password')
     parser.add_argument('--archives-server', help="Archives server",
                         type=str,
-                        default='http://heavyprofile.dev.mozaws.net')
+                        default='http://condprof.dev.mozaws.net')
     args = parser.parse_args(args=args)
     args.pem_password = bytes(args.pem_password, 'utf8')
 

@@ -9,8 +9,8 @@ from clint.textui import progress
 import contextlib
 import json
 
-from heavyprofile import logger
-from heavyprofile.signing import Signer
+from condprof import logger
+from condprof.signing import Signer
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')

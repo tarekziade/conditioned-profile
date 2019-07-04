@@ -1,15 +1,13 @@
-Heavy Profile
-=============
-
-.
+Conditioned Profile
+================-==
 
 The project is built in two parts:
 
-- **hp-creator** a script to create a Firefox "heavy" profile
-- **hp-archiver** a script to create a collection of tar-gzipped files
+- **cp-creator** a script to create a Firefox "heavy" profile
+- **cp-archiver** a script to create a collection of tar-gzipped files
 
 
-hp-creator
+cp-creator
 ----------
 
 The tool maintains a local profile using Arsenic & Geckodriver,
@@ -17,7 +15,7 @@ it visits random pages using a dictionary of words.
 
 To run it, just point the profile directory::
 
-    $ hp-creator /tmp/profile --max-urls 10
+    $ cp-creator /tmp/profile --max-urls 10
     Updating profile located at '/tmp/profile'
     Starting the Fox...
     1/10 https://www.ebay.com/sch/i.html?_from=R40&_trksid=p2380057.m570.l1313.TR0.TRC0.H0.Xbottle.TRS0&_nkw=unit
@@ -38,13 +36,13 @@ The profile also gets the latest Firefox Nightly and uses it
 automatically.
 
 
-hp-archiver
+cp-archiver
 -----------
 
-Once the local profile has been created, **hp-archiver** can
+Once the local profile has been created, **cp-archiver** can
 generate a ZIP file that can be downloaded by clients.
 
-**hp-archiver** takes two arguments to run:
+**cp-archiver** takes two arguments to run:
 
 - the **profile** directory
 - the **archives** directory
@@ -78,7 +76,7 @@ The archives directory is published as a browsable HTTP directory.
 
 Example::
 
-    $ hp-archiver /tmp/profile /tmp/archives/
+    $ cp-archiver /tmp/profile /tmp/archives/
     Creating 2017-08-31-hp.tar.gz...
     => Adding /tmp/profile/addonStartup.json.lz4...
     ...

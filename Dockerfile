@@ -1,4 +1,3 @@
-# Servicebook
 FROM python:3.6-slim
 
 RUN apt-get update
@@ -12,9 +11,9 @@ RUN mkdir /app/archives
 
 ENV PATH "$PATH:/app"
 
-CMD git clone https://github.com/tarekziade/heavy-profile && \
+CMD git clone https://github.com/tarekziade/conditioned-profile && \
 	cd heavy-profile && \
 	pip install --upgrade -r requirements.txt && \
 	python setup.py develop && \
-	hp-creator --max-urls 115 /app/profile && \
-	hp-archiver /app/profile /app/archives
+	cp-creator --max-urls 115 /app/profile && \
+	cp-archiver /app/profile /app/archives

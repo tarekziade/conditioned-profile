@@ -26,13 +26,13 @@ docs:  build
 	$(BIN)/tox -e docs
 
 docker-build:
-	sudo docker build -t heavyprofile:latest .
+	sudo docker build -t condprof:latest .
 
 docker-run:
-	sudo docker run --name heavyprofile --rm -it heavyprofile:latest
+	sudo docker run --name condprof --rm -it condprof:latest
 
 docker-push:
 	sudo docker login
-	sudo docker run --name heavyprofile -it heavyprofile:latest ls 
-	sudo docker commit -m "savepoint" -a "heavyprofile" heavyprofile tarekziade/heavyprofile:latest
-	sudo docker push tarekziade/heavyprofile
+	sudo docker run --name condprof -it condprof:latest ls 
+	sudo docker commit -m "savepoint" -a "condprof" condprof tarekziade/condprof:latest
+	sudo docker push tarekziade/condprof

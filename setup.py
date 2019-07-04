@@ -14,6 +14,6 @@ setup(name='heavy-profile',
       install_requires=install_requires,
       entry_points="""
       [console_scripts]
-      hp-archiver = heavyprofile.archiver:main
-      hp-creator = heavyprofile.creator:main
+      cp-archiver = condprof.archiver:main
+      cp-creator = condprof.creator:main
       """)

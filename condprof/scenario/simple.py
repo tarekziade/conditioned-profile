@@ -1,7 +1,7 @@
 import aiohttp
 import random
 import os
-from heavyprofile import logger
+from condprof import logger
 import asyncio
 
 

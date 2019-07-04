@@ -7,9 +7,9 @@ import tempfile
 import tarfile
 from collections import namedtuple
 
-from heavyprofile.util import fresh_profile
-from heavyprofile.archiver import Archiver
-from heavyprofile.creator import build_profile
+from condprof.util import fresh_profile
+from condprof.archiver import Archiver
+from condprof.creator import build_profile
 
 
 PEM_FILE = os.path.join(os.path.dirname(__file__), 'key.pem')
