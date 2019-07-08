@@ -1,4 +1,3 @@
-import aiohttp
 import random
 import os
 from condprof import logger

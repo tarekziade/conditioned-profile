@@ -4,19 +4,15 @@ import sys
 import argparse
 import asyncio
 import json
-import functools
-import tarfile
 
 from arsenic import get_session
 from arsenic.browsers import Firefox
 from arsenic.services import Geckodriver, free_port, subprocess_based_service
 
 from condprof.util import fresh_profile, latest_nightly
-from condprof.util import check_exists, download_file, TASK_CLUSTER
 from condprof import logger
 from condprof.scenario import scenario
-
-from clint.textui import progress
+from condprof.client import get_profile
 
 
 class CustomGeckodriver(Geckodriver):
@@ -30,48 +26,11 @@ class CustomGeckodriver(Geckodriver):
         )
 
 
-TC_LINK = ('https://index.taskcluster.net/v1/task/garbage.condprof/'
-           'artifacts/public/today-%s.tgz')
-
-
 async def build_profile(args):
     scenarii = scenario[args.scenarii]
 
-    if args.force_new:
-        exists = False
-    else:
-        # getting the latest archive from the server
-        if TASK_CLUSTER:
-            url = TC_LINK % args.scenarii
-            basename = 'today-%s.tgz' % args.scenarii
-        else:
-            basename = '%s-latest.tar.gz' % args.scenarii
-            url = args.archives_server + '/%s' % basename
-        exists, __ = check_exists(url)
-
-    metadata = {}
-
-    if exists:
-        target = os.path.join(args.archives_dir, basename)
-        archive = download_file(url, target=target, check_file=False)
-        with tarfile.open(archive, "r:gz") as tar:
-            logger.msg("Checking the tarball content...")
-            size = len(list(tar))
-            with progress.Bar(expected_size=size) as bar:
-                def _extract(self, *args, **kw):
-                    if not TASK_CLUSTER:
-                        bar.show(bar.last_progress + 1)
-                    try:
-                        return self.old(*args, **kw)
-                    finally:
-                        pass
-                        # if args[0].name == ".hp.json":
-                        #   import pdb; pdb.set_trace()
-
-                tar.old = tar.extract
-                tar.extract = functools.partial(_extract, tar)
-                tar.extractall(args.profile)
-
+    if not args.force_new:
+        get_profile(args)
     logger.msg("Updating profile located at %r" % args.profile)
 
     f_args = ["-profile", args.profile]
