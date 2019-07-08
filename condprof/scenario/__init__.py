@@ -1,4 +1,5 @@
-from condprof.scenario.simple import simple
+from condprof.scenario.heavy import heavy
+from condprof.scenario.cold import cold
 
 
-scenario = {'simple': simple}
+scenario = {'heavy': heavy, 'cold': cold}

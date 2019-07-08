@@ -25,7 +25,7 @@ class TestArchiver(unittest.TestCase):
                                                'max_urls',
                                                'pem_file',
                                                'pem_password'])
-        args.scenarii = 'simple'
+        args.scenarii = 'heavy'
         args.profile = self.profile_dir
         args.firefox = None
         args.max_urls = 2
@@ -45,40 +45,40 @@ class TestArchiver(unittest.TestCase):
             then = now - timedelta(days=1)
         then_str = then.strftime('%Y-%m-%d')
         now_str = now.strftime('%Y-%m-%d')
-        return 'simple-diff-%s-%s-hp.tar.gz' % (then_str, now_str)
+        return 'heavy-diff-%s-%s-hp.tar.gz' % (then_str, now_str)
 
     def tearDown(self):
         shutil.rmtree(self.profile_dir)
         shutil.rmtree(self.archives_dir)
 
-    def test_simple_archiving(self):
-        # this creates a simple archive and updates the latest sl
+    def test_heavy_archiving(self):
+        # this creates a heavy archive and updates the latest sl
         self.archiver.update()
 
         res = os.listdir(self.archives_dir)
         res.sort()
         today = date.today()
-        archive = today.strftime('simple-%Y-%m-%d-hp.tar.gz')
-        wanted = [archive, 'simple-latest.tar.gz', archive + '.sha256',
-                  archive + '.asc', 'simple-latest.tar.gz.asc',
-                  'simple-latest.tar.gz.sha256']
+        archive = today.strftime('heavy-%Y-%m-%d-hp.tar.gz')
+        wanted = [archive, 'heavy-latest.tar.gz', archive + '.sha256',
+                  archive + '.asc', 'heavy-latest.tar.gz.asc',
+                  'heavy-latest.tar.gz.sha256']
         wanted.sort()
         self.assertEqual(res, wanted)
 
     def test_diff_archiving(self):
         # we update the archives every day for 15 days
         # we keep the last ten days
-        wanted = ['simple-latest.tar.gz',
-                  'simple-latest.tar.gz.sha256',
-                  'simple-latest.tar.gz.asc']
+        wanted = ['heavy-latest.tar.gz',
+                  'heavy-latest.tar.gz.sha256',
+                  'heavy-latest.tar.gz.asc']
 
         _15_days_ago = date.today() - timedelta(days=15)
 
         for i in range(15):
             when = _15_days_ago + timedelta(days=i)
-            wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz'))
-            wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz.sha256'))
-            wanted.append(when.strftime('simple-%Y-%m-%d-hp.tar.gz.asc'))
+            wanted.append(when.strftime('heavy-%Y-%m-%d-hp.tar.gz'))
+            wanted.append(when.strftime('heavy-%Y-%m-%d-hp.tar.gz.sha256'))
+            wanted.append(when.strftime('heavy-%Y-%m-%d-hp.tar.gz.asc'))
 
             if i != 0:
                 wanted.append(self._diff_name(when))
@@ -93,7 +93,7 @@ class TestArchiver(unittest.TestCase):
         self.assertEqual(res, wanted)
 
     def test_archiving_after_changes(self):
-        # this creates a simple archive
+        # this creates a heavy archive
         today = date.today()
         yesterday = today - timedelta(days=1)
         _2_days_ago = today - timedelta(days=2)

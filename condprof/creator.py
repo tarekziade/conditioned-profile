@@ -65,7 +65,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument('--firefox', help='Firefox Binary',
                         type=str, default=None)
     parser.add_argument('--scenarii', help='Scenarii to use',
-                        type=str, default='simple')
+                        type=str, default='heavy')
     parser.add_argument('--archives-server', help="Archives server",
                         type=str,
                         default='http://condprof.dev.mozaws.net')

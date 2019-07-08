@@ -54,7 +54,7 @@ class TabSwitcher(object):
         await session.switch_to_window(handle)
 
 
-async def simple(session, args):
+async def heavy(session, args):
     metadata = {}
     max = args.max_urls
 

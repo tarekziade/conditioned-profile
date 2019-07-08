@@ -27,7 +27,7 @@ class ArchiveError(Exception):
     pass
 
 
-def fresh_profile(target_dir=None, name='simple'):
+def fresh_profile(target_dir=None, name='heavy'):
     if target_dir is None:
         target_dir = os.path.join(tempfile.mkdtemp(), 'profile')
     shutil.copytree(_BASE_PROFILE, target_dir)
