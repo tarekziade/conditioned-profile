@@ -3,11 +3,13 @@ import time
 import os
 import tempfile
 import shutil
-import requests
-from bs4 import BeautifulSoup
-from clint.textui import progress
 import contextlib
 import json
+
+import requests
+from requests.exceptions import ConnectionError
+from bs4 import BeautifulSoup
+from clint.textui import progress
 
 from condprof import logger
 from condprof.signing import Signer
@@ -60,7 +62,11 @@ def get_firefox_download_link():
 def check_exists(archive, server=None):
     if server is not None:
         archive = server + '/' + archive
-    resp = requests.head(archive)
+    try:
+        resp = requests.head(archive)
+    except ConnectionError:
+        return False, {}
+
     if resp.status_code == 303:
         return check_exists(resp.headers['Location'])
     return resp.status_code == 200, resp.headers

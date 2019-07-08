@@ -5,7 +5,7 @@ install_requires = ["requests", "clint",
                     "cryptography"]
 
 
-setup(name='heavy-profile',
+setup(name='conditioned-profile',
       version="0.1",
       packages=find_packages(),
       description="Firefox Heavy Profile creator",

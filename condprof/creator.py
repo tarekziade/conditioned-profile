@@ -53,6 +53,7 @@ async def build_profile(args):
     with open(os.path.join(args.profile, '.hp.json'), 'w') as f:
         f.write(json.dumps(metadata))
 
+    logger.msg("Profile at %s" % args.profile)
     logger.msg("Done.")
 
 
@@ -74,7 +75,7 @@ def main(args=sys.argv[1:]):
                         type=str,
                         default='/tmp/archives')
     parser.add_argument('--force-new', help="Create from scratch",
-                        type=bool, default=False)
+                        action='store_true', default=False)
 
     args = parser.parse_args(args=args)
     if not os.path.exists(args.profile):

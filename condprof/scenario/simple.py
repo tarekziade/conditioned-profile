@@ -57,8 +57,10 @@ class TabSwitcher(object):
 async def simple(session, args):
     metadata = {}
     max = args.max_urls
-    # open 20 tabs
-    for i in range(20):
+
+    # open at the most 100 tabs (or max)
+    num_tabs = max >= 100 and 100 or max
+    for i in range(num_tabs):
         await session.execute_script(_TAB_OPEN)
 
     tabs = TabSwitcher(session)
