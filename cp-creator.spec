@@ -41,7 +41,8 @@ a = Entrypoint('conditioned-profile', 'console_scripts', 'cp-creator')
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
-_FILES = ("condprof/scenario/words.txt", "condprof/scenario/urls.txt")
+_FILES = ("condprof/scenario/words.txt", "condprof/scenario/urls.txt",
+          "condprof/tests/key.pem")
 
 import os
 import os.path
