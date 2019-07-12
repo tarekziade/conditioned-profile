@@ -35,23 +35,34 @@ def _tarinfo2mem(tar, tarinfo):
 
 
 class Archiver(object):
-    def __init__(self, profile_dir, archives_dir, pem_file=None,
-                 pem_password=None, archives_server=None):
+    def __init__(
+        self,
+        profile_dir,
+        archives_dir,
+        pem_file=None,
+        pem_password=None,
+        archives_server=None,
+        no_signing=False,
+    ):
         self.archives_server = archives_server
         self.profile_dir = profile_dir
         self.archives_dir = archives_dir
         # reading metadata
-        with open(os.path.join(profile_dir, '.hp.json')) as f:
+        with open(os.path.join(profile_dir, ".hp.json")) as f:
             self.metadata = json.loads(f.read())
-        self.profile_name = self.metadata['name']
+        self.profile_name = self.metadata["name"]
         self.pem_file = pem_file
         self.pem_password = pem_password
-        self.signer = Signer(pem_file, pem_password)
+        self.no_signing = no_signing
+        if no_signing:
+            self.signer = False
+        else:
+            self.signer = Signer(pem_file, pem_password)
 
     def _checksum(self, archive, sign=True):
         return self.signer.checksum(archive, write=True, sign=True)
 
-    def _strftime(self, date, template='-%Y-%m-%d-hp.tar.gz'):
+    def _strftime(self, date, template="-%Y-%m-%d-hp.tar.gz"):
         return date.strftime(self.profile_name + template)
 
     def _get_archive_path(self, when):
@@ -59,13 +70,14 @@ class Archiver(object):
         return os.path.join(self.archives_dir, archive), archive
 
     def _get_diff_path(self, date1, date2):
-        date1 = date1.strftime('%Y-%m-%d')
-        date2 = date2.strftime('%Y-%m-%d')
-        arcname = self.profile_name + '-diff-%s-%s-hp.tar.gz' % (date1, date2)
+        date1 = date1.strftime("%Y-%m-%d")
+        date2 = date2.strftime("%Y-%m-%d")
+        arcname = self.profile_name + "-diff-%s-%s-hp.tar.gz" % (date1, date2)
         return os.path.join(self.archives_dir, arcname)
 
     def _create_archive(self, when, iterator=None):
         if iterator is None:
+
             def _files(tar):
                 files = glob.glob(os.path.join(self.profile_dir, "*"))
                 yield len(files)
@@ -76,6 +88,7 @@ class Archiver(object):
                     except FileNotFoundError:
                         # locks and such
                         pass
+
             iterator = _files
 
         if isinstance(when, str):
@@ -91,22 +104,30 @@ class Archiver(object):
                     if not TASK_CLUSTER:
                         bar.show(bar.last_progress + 1)
 
-        self._checksum(archive)
+        if not self.no_signing:
+            self._checksum(archive)
         return archive
 
     def _update_symlinks(self, archive):
-        for suffix in ('.tar.gz', '.tar.gz.sha256', '.tar.gz.asc'):
-            path = os.path.join(self.archives_dir,
-                                self.profile_name + '-latest' + suffix)
+        archive_dir, archive_name = os.path.split(archive)
+        archive_name = archive_name.split(".", 1)[0]
+
+        for suffix in (".tar.gz", ".tar.gz.sha256", ".tar.gz.asc"):
+            path = os.path.join(
+                self.archives_dir, self.profile_name + "-latest" + suffix
+            )
             if os.path.exists(path):
                 os.remove(path)
-            os.symlink(archive, path)
-            logger.msg("%r symlinked at %r" % (archive, path))
+            real = os.path.join(archive_dir, archive_name + suffix)
+            if not os.path.exists(real):
+                continue
+            os.symlink(real, path)
+            logger.msg("%r symlinked at %r" % (real, path))
 
     def _check_server(self, archive, target):
         if self.archives_server is None:
             return
-        url = self.archives_server + '/' + archive
+        url = self.archives_server + "/" + archive
         exists, __ = check_exists(url)
         if exists:
             download_file(url, target, check_file=True)
@@ -168,35 +189,51 @@ class Archiver(object):
 
         self._create_archive(diff_archive, _arc)
         logger.msg(str(diff_info))
-        self._checksum(diff_archive)
+        if not self.no_signing:
+            self._checksum(diff_archive)
         return diff_archive
 
 
 def main(args=sys.argv[1:]):
-    parser = argparse.ArgumentParser(description='Profile Archiver')
-    parser.add_argument('profile_dir', help='Profile Dir', type=str)
-    parser.add_argument('archives_dir', help='Archives Dir', type=str)
-    parser.add_argument('--prior', help='Prior', type=int, default=0)
-    parser.add_argument('--pem-file', help='pem file', type=str,
-                        default='condprof/tests/key.pem')
-    parser.add_argument('--pem-password', help='pem password', type=str,
-                        default='password')
-    parser.add_argument('--archives-server', help="Archives server",
-                        type=str,
-                        default='http://condprof.dev.mozaws.net')
+    parser = argparse.ArgumentParser(description="Profile Archiver")
+    parser.add_argument("profile_dir", help="Profile Dir", type=str)
+    parser.add_argument("archives_dir", help="Archives Dir", type=str)
+
+    parser.add_argument(
+        "--no-signing", help="No signing", action="store_true", default=False
+    )
+
+    parser.add_argument("--prior", help="Prior", type=int, default=0)
+    parser.add_argument(
+        "--pem-file", help="pem file", type=str, default="condprof/tests/key.pem"
+    )
+    parser.add_argument(
+        "--pem-password", help="pem password", type=str, default="password"
+    )
+    parser.add_argument(
+        "--archives-server",
+        help="Archives server",
+        type=str,
+        default="http://condprof.dev.mozaws.net",
+    )
     args = parser.parse_args(args=args)
-    args.pem_password = bytes(args.pem_password, 'utf8')
+    args.pem_password = bytes(args.pem_password, "utf8")
 
     if not os.path.exists(args.archives_dir):
         logger.msg("%r does not exists." % args.archives_dir)
         sys.exit(1)
 
-    archiver = Archiver(args.profile_dir, args.archives_dir,
-                        args.pem_file, args.pem_password,
-                        args.archives_server)
+    archiver = Archiver(
+        args.profile_dir,
+        args.archives_dir,
+        args.pem_file,
+        args.pem_password,
+        args.archives_server,
+        args.no_signing,
+    )
 
     if TASK_CLUSTER:
-        name = 'today-%s.tgz' % archiver.profile_name
+        name = "today-%s.tgz" % archiver.profile_name
         when = os.path.join(args.archives_dir, name)
     else:
         when = date.today()

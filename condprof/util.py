@@ -15,8 +15,8 @@ from condprof import logger
 from condprof.signing import Signer
 
 
-_BASE_PROFILE = os.path.join(os.path.dirname(__file__), 'base_profile')
-TASK_CLUSTER = 'TASKCLUSTER_WORKER_TYPE' in os.environ.keys()
+_BASE_PROFILE = os.path.join(os.path.dirname(__file__), "base_profile")
+TASK_CLUSTER = "TASKCLUSTER_WORKER_TYPE" in os.environ.keys()
 
 
 class ArchiveNotFound(Exception):
@@ -27,48 +27,48 @@ class ArchiveError(Exception):
     pass
 
 
-def fresh_profile(target_dir=None, name='heavy'):
+def fresh_profile(target_dir=None, name="heavy"):
     if target_dir is None:
-        target_dir = os.path.join(tempfile.mkdtemp(), 'profile')
+        target_dir = os.path.join(tempfile.mkdtemp(), "profile")
     shutil.copytree(_BASE_PROFILE, target_dir)
-    with open(os.path.join(target_dir, '.hp.json'), 'w') as f:
-        f.write(json.dumps({'name': name}))
+    with open(os.path.join(target_dir, ".hp.json"), "w") as f:
+        f.write(json.dumps({"name": name}))
 
     return target_dir
 
 
-link = 'https://ftp.mozilla.org/pub/firefox/nightly/latest-mozilla-central/'
+link = "https://ftp.mozilla.org/pub/firefox/nightly/latest-mozilla-central/"
 
 
 def get_firefox_download_link():
-    if platform.system() == 'Darwin':
-        extension = '.dmg'
-    elif platform.system() == 'Linux':
+    if platform.system() == "Darwin":
+        extension = ".dmg"
+    elif platform.system() == "Linux":
         arch = platform.machine()
-        extension = '.linux-%s.tar.bz2' % arch
+        extension = ".linux-%s.tar.bz2" % arch
     else:
         raise NotImplementedError(platform.system())
 
     page = requests.get(link).text
     soup = BeautifulSoup(page, "html.parser")
-    for node in soup.find_all('a', href=True):
-        href = node['href']
+    for node in soup.find_all("a", href=True):
+        href = node["href"]
         if href.endswith(extension):
-            return 'https://ftp.mozilla.org' + href
+            return "https://ftp.mozilla.org" + href
 
     raise Exception()
 
 
 def check_exists(archive, server=None):
     if server is not None:
-        archive = server + '/' + archive
+        archive = server + "/" + archive
     try:
         resp = requests.head(archive)
     except ConnectionError:
         return False, {}
 
     if resp.status_code == 303:
-        return check_exists(resp.headers['Location'])
+        return check_exists(resp.headers["Location"])
     return resp.status_code == 200, resp.headers
 
 
@@ -79,19 +79,19 @@ def download_file(url, target=None, check_file=True):
         logger.msg("Cannot find %r" % url)
         raise ArchiveNotFound(url)
 
-    etag = headers.get('ETag')
+    etag = headers.get("ETag")
     if target is None:
-        target = url.split('/')[-1]
+        target = url.split("/")[-1]
 
     if check_file:
-        check = requests.get(url + '.sha256')
+        check = requests.get(url + ".sha256")
         check = check.text
 
     if os.path.exists(target):
         if not check_file:
             if etag is not None:
-                if os.path.exists(target + '.etag'):
-                    with open(target + '.etag') as f:
+                if os.path.exists(target + ".etag"):
+                    with open(target + ".etag") as f:
                         current_etag = f.read()
                     if etag == current_etag:
                         logger.msg("Already Downloaded")
@@ -107,11 +107,11 @@ def download_file(url, target=None, check_file=True):
 
     logger.msg("Downloading %s" % url)
     req = requests.get(url, stream=True)
-    total_length = int(req.headers.get('content-length'))
+    total_length = int(req.headers.get("content-length"))
     target_dir = os.path.dirname(target)
-    if target_dir != '' and not os.path.exists(target_dir):
+    if target_dir != "" and not os.path.exists(target_dir):
         os.makedirs(target_dir)
-    with open(target, 'wb') as f:
+    with open(target, "wb") as f:
         if TASK_CLUSTER:
             for chunk in req.iter_content(chunk_size=1024):
                 if chunk:
@@ -126,7 +126,7 @@ def download_file(url, target=None, check_file=True):
                     f.flush()
 
     if etag is not None:
-        with open(target + '.etag', 'w') as f:
+        with open(target + ".etag", "w") as f:
             f.write(etag)
 
     if check_file and check != signer.checksum(target):
@@ -145,18 +145,17 @@ def latest_nightly(binary=None):
         target = download_file(nightly_archive, check_file=False)
 
         # on macOs we just mount the DMG
-        if platform.system() == 'Darwin':
+        if platform.system() == "Darwin":
             cmd = "hdiutil attach -mountpoint /Volumes/Nightly %s"
             os.system(cmd % target)
-            binary = ('/Volumes/Nightly/FirefoxNightly.app'
-                      '/Contents/MacOS/firefox')
+            binary = "/Volumes/Nightly/FirefoxNightly.app" "/Contents/MacOS/firefox"
         # on linux we unpack it
-        elif platform.system() == 'Linux':
-            cmd = 'bunzip2 %s' % target
+        elif platform.system() == "Linux":
+            cmd = "bunzip2 %s" % target
             os.system(cmd)
-            cmd = 'tar -xvf %s' % target[:-len('.bz2')]
+            cmd = "tar -xvf %s" % target[: -len(".bz2")]
             os.system(cmd)
-            binary = 'firefox/firefox'
+            binary = "firefox/firefox"
 
         mounted = True
     else:
@@ -165,10 +164,10 @@ def latest_nightly(binary=None):
         yield binary
     finally:
         if mounted:
-            if platform.system() == 'Darwin':
+            if platform.system() == "Darwin":
                 logger.msg("Unmounting Firefox")
                 time.sleep(10)
                 os.system("hdiutil detach /Volumes/Nightly")
-            elif platform.system() == 'Linux':
+            elif platform.system() == "Linux":
                 # XXX we should keep it for next time
-                shutil.rmtree('firefox')
+                shutil.rmtree("firefox")

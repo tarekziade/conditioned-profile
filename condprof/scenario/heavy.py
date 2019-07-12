@@ -4,12 +4,12 @@ from condprof import logger
 import asyncio
 
 
-WORDS = os.path.join(os.path.dirname(__file__), 'words.txt')
+WORDS = os.path.join(os.path.dirname(__file__), "words.txt")
 with open(WORDS) as f:
     WORDS = f.readlines()
 
 
-URLS = os.path.join(os.path.dirname(__file__), 'urls.txt')
+URLS = os.path.join(os.path.dirname(__file__), "urls.txt")
 with open(URLS) as f:
     URLS = f.readlines()
 
@@ -20,11 +20,11 @@ URL_LIST = []
 def _build_url_list():
     for url in URLS:
         url = url.strip()
-        if url.startswith('#'):
+        if url.startswith("#"):
             continue
         for word in WORDS:
             word = word.strip()
-            if word.startswith('#'):
+            if word.startswith("#"):
                 continue
             URL_LIST.append(url.format(word))
     random.shuffle(URL_LIST)
@@ -67,7 +67,7 @@ async def heavy(session, args):
     visited = 0
 
     for current, url in enumerate(URL_LIST):
-        logger.visit_url(index=current+1, total=max, url=url)
+        logger.visit_url(index=current + 1, total=max, url=url)
         retries = 0
         while retries < 3:
             try:
@@ -82,5 +82,5 @@ async def heavy(session, args):
 
         await tabs.switch()
 
-    metadata['visited_url'] = visited
+    metadata["visited_url"] = visited
     return metadata

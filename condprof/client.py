@@ -8,8 +8,10 @@ from condprof import logger
 from condprof.util import check_exists, download_file, TASK_CLUSTER
 
 
-TC_LINK = ('https://index.taskcluster.net/v1/task/garbage.condprof/'
-           'artifacts/public/today-%s.tgz')
+TC_LINK = (
+    "https://index.taskcluster.net/v1/task/garbage.condprof/"
+    "artifacts/public/today-%s.tgz"
+)
 
 
 def get_profile(args):
@@ -17,10 +19,10 @@ def get_profile(args):
     # getting the latest archive from the server
     if TASK_CLUSTER:
         url = TC_LINK % args.scenarii
-        basename = 'today-%s.tgz' % args.scenarii
+        basename = "today-%s.tgz" % args.scenarii
     else:
-        basename = '%s-latest.tar.gz' % args.scenarii
-        url = args.archives_server + '/%s' % basename
+        basename = "%s-latest.tar.gz" % args.scenarii
+        url = args.archives_server + "/%s" % basename
     exists, __ = check_exists(url)
 
     if not exists:
@@ -32,6 +34,7 @@ def get_profile(args):
         logger.msg("Checking the tarball content...")
         size = len(list(tar))
         with progress.Bar(expected_size=size) as bar:
+
             def _extract(self, *args, **kw):
                 if not TASK_CLUSTER:
                     bar.show(bar.last_progress + 1)
@@ -39,6 +42,7 @@ def get_profile(args):
                     return self.old(*args, **kw)
                 finally:
                     pass
+
             tar.old = tar.extract
             tar.extract = functools.partial(_extract, tar)
             tar.extractall(args.profile)

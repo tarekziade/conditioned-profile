@@ -15,21 +15,21 @@ class DiffInfo(object):
 
     def __iter__(self):
         for change in self._info:
-            yield change.split(b':')
+            yield change.split(b":")
 
     def __len__(self):
         return len(self._info)
 
     def load(self, data):
         self._info[:] = []
-        for line in data.split(b'\n'):
+        for line in data.split(b"\n"):
             line = line.strip()
-            if line == b'':
+            if line == b"":
                 continue
             self._info.append(line)
 
     def dump(self):
-        return b'\n'.join(self._info)
+        return b"\n".join(self._info)
 
     def add_changed(self, name):
         self.changed += 1
@@ -50,8 +50,8 @@ class DiffInfo(object):
                 self.add_new(_b(name))
                 files.append(info)
             else:
-                old = previous_files[name][0].get_info()['chksum']
-                new = info[0].get_info()['chksum']
+                old = previous_files[name][0].get_info()["chksum"]
+                new = info[0].get_info()["chksum"]
                 if old != new:
                     self.add_changed(_b(name))
                     files.append(info)

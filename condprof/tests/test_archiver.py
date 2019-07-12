@@ -12,20 +12,19 @@ from condprof.archiver import Archiver
 from condprof.creator import build_profile
 
 
-PEM_FILE = os.path.join(os.path.dirname(__file__), 'key.pem')
-PEM_PASS = b'password'
+PEM_FILE = os.path.join(os.path.dirname(__file__), "key.pem")
+PEM_PASS = b"password"
 
 
 class TestArchiver(unittest.TestCase):
     def setUp(self):
         self.profile_dir = fresh_profile()
         self.archives_dir = os.path.join(tempfile.mkdtemp())
-        self.args = args = namedtuple('args', ['scenarii', 'profile',
-                                               'firefox',
-                                               'max_urls',
-                                               'pem_file',
-                                               'pem_password'])
-        args.scenarii = 'heavy'
+        self.args = args = namedtuple(
+            "args",
+            ["scenarii", "profile", "firefox", "max_urls", "pem_file", "pem_password"],
+        )
+        args.scenarii = "heavy"
         args.profile = self.profile_dir
         args.firefox = None
         args.max_urls = 2
@@ -35,17 +34,18 @@ class TestArchiver(unittest.TestCase):
         args.archives_server = None
         args.force_new = True
         args.archives_dir = self.archives_dir
-        self.archiver = Archiver(args.profile_dir, args.archives_dir,
-                                 args.pem_file, args.pem_password)
+        self.archiver = Archiver(
+            args.profile_dir, args.archives_dir, args.pem_file, args.pem_password
+        )
 
     def _diff_name(self, now=None, then=None):
         if now is None:
             now = date.today()
         if then is None:
             then = now - timedelta(days=1)
-        then_str = then.strftime('%Y-%m-%d')
-        now_str = now.strftime('%Y-%m-%d')
-        return 'heavy-diff-%s-%s-hp.tar.gz' % (then_str, now_str)
+        then_str = then.strftime("%Y-%m-%d")
+        now_str = now.strftime("%Y-%m-%d")
+        return "heavy-diff-%s-%s-hp.tar.gz" % (then_str, now_str)
 
     def tearDown(self):
         shutil.rmtree(self.profile_dir)
@@ -58,32 +58,39 @@ class TestArchiver(unittest.TestCase):
         res = os.listdir(self.archives_dir)
         res.sort()
         today = date.today()
-        archive = today.strftime('heavy-%Y-%m-%d-hp.tar.gz')
-        wanted = [archive, 'heavy-latest.tar.gz', archive + '.sha256',
-                  archive + '.asc', 'heavy-latest.tar.gz.asc',
-                  'heavy-latest.tar.gz.sha256']
+        archive = today.strftime("heavy-%Y-%m-%d-hp.tar.gz")
+        wanted = [
+            archive,
+            "heavy-latest.tar.gz",
+            archive + ".sha256",
+            archive + ".asc",
+            "heavy-latest.tar.gz.asc",
+            "heavy-latest.tar.gz.sha256",
+        ]
         wanted.sort()
         self.assertEqual(res, wanted)
 
     def test_diff_archiving(self):
         # we update the archives every day for 15 days
         # we keep the last ten days
-        wanted = ['heavy-latest.tar.gz',
-                  'heavy-latest.tar.gz.sha256',
-                  'heavy-latest.tar.gz.asc']
+        wanted = [
+            "heavy-latest.tar.gz",
+            "heavy-latest.tar.gz.sha256",
+            "heavy-latest.tar.gz.asc",
+        ]
 
         _15_days_ago = date.today() - timedelta(days=15)
 
         for i in range(15):
             when = _15_days_ago + timedelta(days=i)
-            wanted.append(when.strftime('heavy-%Y-%m-%d-hp.tar.gz'))
-            wanted.append(when.strftime('heavy-%Y-%m-%d-hp.tar.gz.sha256'))
-            wanted.append(when.strftime('heavy-%Y-%m-%d-hp.tar.gz.asc'))
+            wanted.append(when.strftime("heavy-%Y-%m-%d-hp.tar.gz"))
+            wanted.append(when.strftime("heavy-%Y-%m-%d-hp.tar.gz.sha256"))
+            wanted.append(when.strftime("heavy-%Y-%m-%d-hp.tar.gz.asc"))
 
             if i != 0:
                 wanted.append(self._diff_name(when))
-                wanted.append(self._diff_name(when) + '.sha256')
-                wanted.append(self._diff_name(when) + '.asc')
+                wanted.append(self._diff_name(when) + ".sha256")
+                wanted.append(self._diff_name(when) + ".asc")
 
             self.archiver.update(when)
 
@@ -114,12 +121,11 @@ class TestArchiver(unittest.TestCase):
         # let's check the diff file
         with tarfile.open(diffname, "r:gz") as tar:
             for tarinfo in tar:
-                if tarinfo.name != 'diffinfo':
+                if tarinfo.name != "diffinfo":
                     continue
                 diff = tar.extractfile(tarinfo)
                 diff = diff.read()
-                diff = [line for line in diff.split(b'\n') if line.strip() !=
-                        b'']
+                diff = [line for line in diff.split(b"\n") if line.strip() != b""]
                 break
 
         # we have over 100 new files
@@ -133,13 +139,12 @@ class TestArchiver(unittest.TestCase):
         # let's check the diff file
         with tarfile.open(diffname, "r:gz") as tar:
             for tarinfo in tar:
-                if tarinfo.name != 'diffinfo':
+                if tarinfo.name != "diffinfo":
                     continue
                 diff = tar.extractfile(tarinfo)
                 diff = diff.read()
-                diff = diff.split(b'\n')
-                diff = [line for line in diff if line.strip() !=
-                        b'']
+                diff = diff.split(b"\n")
+                diff = [line for line in diff if line.strip() != b""]
                 break
 
         # we have no difference
