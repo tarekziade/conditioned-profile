@@ -39,9 +39,39 @@ def get_age(metadata):
     return delta.days
 
 
+async def run(args):
+    # XXX todo grab older profile, and set args.profile
+    with latest_nightly(args.firefox) as binary:
+        args.firefox = os.path.abspath(binary)
+        await build_profile(args)
+
+    if not args.archive:
+        return
+    logger.msg("Creating archive")
+    archiver = Archiver(args.profile, args.archive, no_signing=True)
+    age = archiver.metadata["age"]
+    if age < 7:
+        age = "days"
+    elif age < 30:
+        age = "weeks"
+    elif age < 30 * 6:
+        age = "months"
+    else:
+        age = "old"  # :)
+
+    archiver.metadata["age"] = age
+    # the archive name is of the form
+    # profile-<platform>-<type>-<age>-<version>-<customization>.tgz
+    name = "profile-%(platform)s-%(name)s-%(age)s-%(customization)s.tgz"
+    name = name % archiver.metadata
+    archive_name = os.path.join(args.archive, name)
+    # no diffs for now
+    archiver.create_archive(archive_name)
+    logger.msg("Archive created at %s" % archive_name)
+
+
 async def build_profile(args):
     scenarii = scenario[args.scenarii]
-
     if not args.force_new:
         get_profile(args)
     logger.msg("Updating profile located at %r" % args.profile)
@@ -94,7 +124,7 @@ def main(args=sys.argv[1:]):
         "--max-urls", help="How many URLS to visit", type=int, default=115
     )
     parser.add_argument("--firefox", help="Firefox Binary", type=str, default=None)
-    parser.add_argument("--scenarii", help="Scenarii to use", type=str, default="heavy")
+    parser.add_argument("--scenarii", help="Scenarii to use", type=str, default="all")
     parser.add_argument(
         "--archives-server",
         help="Archives server",
@@ -118,37 +148,20 @@ def main(args=sys.argv[1:]):
         fresh_profile(args.profile)
 
     loop = asyncio.get_event_loop()
-    with latest_nightly(args.firefox) as binary:
-        args.firefox = os.path.abspath(binary)
-        try:
-            loop.run_until_complete(build_profile(args))
-        finally:
-            loop.close()
 
-    if not args.archive:
-        return
+    async def run_all(args):
+        if args.scenarii != "all":
+            return await run(args)
+        res = []
+        for name in scenario.keys():
+            args.scenarii = name
+            res.append(await run(args))
+        return res
 
-    logger.msg("Creating archive")
-    archiver = Archiver(args.profile, args.archive, no_signing=True)
-    age = archiver.metadata["age"]
-    if age < 7:
-        age = "days"
-    elif age < 30:
-        age = "weeks"
-    elif age < 30 * 6:
-        age = "months"
-    else:
-        age = "old"  # :)
-
-    archiver.metadata["age"] = age
-    # the archive name is of the form
-    # profile-<platform>-<type>-<age>-<version>-<customization>.tgz
-    name = "profile-%(platform)s-%(name)s-%(age)s-%(customization)s.tgz"
-    name = name % archiver.metadata
-    archive_name = os.path.join(args.archive, name)
-    # no diffs for now
-    archiver.create_archive(archive_name)
-    logger.msg("Archive created at %s" % archive_name)
+    try:
+        loop.run_until_complete(run_all(args))
+    finally:
+        loop.close()
 
 
 if __name__ == "__main__":
