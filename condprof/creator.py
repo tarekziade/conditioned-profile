@@ -4,6 +4,7 @@ import sys
 import argparse
 import asyncio
 import json
+import datetime
 
 from arsenic import get_session
 from arsenic.browsers import Firefox
@@ -13,6 +14,7 @@ from condprof.util import fresh_profile, latest_nightly
 from condprof import logger
 from condprof.scenario import scenario
 from condprof.client import get_profile
+from condprof.archiver import Archiver
 
 
 class CustomGeckodriver(Geckodriver):
@@ -26,12 +28,27 @@ class CustomGeckodriver(Geckodriver):
         )
 
 
+def get_age(metadata):
+    created = metadata["created"][:26]
+    updated = metadata["updated"][:26]
+    # tz..
+    format = "%Y-%m-%d %H:%M:%S.%f"
+    created = datetime.datetime.strptime(created, format)
+    updated = datetime.datetime.strptime(updated, format)
+    delta = created - updated
+    return delta.days
+
+
 async def build_profile(args):
     scenarii = scenario[args.scenarii]
 
     if not args.force_new:
         get_profile(args)
     logger.msg("Updating profile located at %r" % args.profile)
+    metadata_file = os.path.join(args.profile, ".hp.json")
+
+    with open(metadata_file) as f:
+        metadata = json.loads(f.read())
 
     f_args = ["-profile", args.profile]
     if platform.system() != "Darwin":
@@ -46,12 +63,22 @@ async def build_profile(args):
         async with get_session(
             CustomGeckodriver(log_file=glog), Firefox(**caps)
         ) as session:
-            metadata = await scenarii(session, args)
+            logger.msg("Running the %s scenario" % args.scenarii)
+            metadata.update(await scenarii(session, args))
 
     # writing metadata
     logger.msg("Creating metadata...")
+    ts = str(datetime.datetime.now())
+    if "created" not in metadata:
+        metadata["created"] = ts
+    metadata["updated"] = ts
     metadata["name"] = args.scenarii
-    with open(os.path.join(args.profile, ".hp.json"), "w") as f:
+    metadata["platform"] = sys.platform
+    metadata["age"] = get_age(metadata)
+    metadata["version"] = "69.0a1"  # add the build id XXX
+    metadata["customization"] = "vanilla"  # add themes
+
+    with open(metadata_file, "w") as f:
         f.write(json.dumps(metadata))
 
     logger.msg("Profile at %s" % args.profile)
@@ -61,6 +88,8 @@ async def build_profile(args):
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description="Profile Creator")
     parser.add_argument("profile", help="Profile Dir", type=str)
+    parser.add_argument("archive", help="Archives Dir", type=str, default=None)
+
     parser.add_argument(
         "--max-urls", help="How many URLS to visit", type=int, default=115
     )
@@ -84,7 +113,6 @@ def main(args=sys.argv[1:]):
     parser.add_argument(
         "--force-new", help="Create from scratch", action="store_true", default=False
     )
-
     args = parser.parse_args(args=args)
     if not os.path.exists(args.profile):
         fresh_profile(args.profile)
@@ -96,6 +124,31 @@ def main(args=sys.argv[1:]):
             loop.run_until_complete(build_profile(args))
         finally:
             loop.close()
+
+    if not args.archive:
+        return
+
+    logger.msg("Creating archive")
+    archiver = Archiver(args.profile, args.archive, no_signing=True)
+    age = archiver.metadata["age"]
+    if age < 7:
+        age = "days"
+    elif age < 30:
+        age = "weeks"
+    elif age < 30 * 6:
+        age = "months"
+    else:
+        age = "old"  # :)
+
+    archiver.metadata["age"] = age
+    # the archive name is of the form
+    # profile-<platform>-<type>-<age>-<version>-<customization>.tgz
+    name = "profile-%(platform)s-%(name)s-%(age)s-" "%(version)s-%(customization)s.tgz"
+    name = name % archiver.metadata
+    archive_name = os.path.join(args.archives_dir, name)
+    # no diffs for now
+    archiver.create_archive(archive_name)
+    logger.msg("Archive created at %s" % archive_name)
 
 
 if __name__ == "__main__":

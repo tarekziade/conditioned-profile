@@ -148,7 +148,7 @@ def latest_nightly(binary=None):
         if platform.system() == "Darwin":
             cmd = "hdiutil attach -mountpoint /Volumes/Nightly %s"
             os.system(cmd % target)
-            binary = "/Volumes/Nightly/FirefoxNightly.app" "/Contents/MacOS/firefox"
+            binary = "/Volumes/Nightly/Firefox Nightly.app/Contents/MacOS/firefox"
         # on linux we unpack it
         elif platform.system() == "Linux":
             cmd = "bunzip2 %s" % target

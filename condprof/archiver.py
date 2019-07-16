@@ -75,7 +75,7 @@ class Archiver(object):
         arcname = self.profile_name + "-diff-%s-%s-hp.tar.gz" % (date1, date2)
         return os.path.join(self.archives_dir, arcname)
 
-    def _create_archive(self, when, iterator=None):
+    def create_archive(self, when, iterator=None):
         if iterator is None:
 
             def _files(tar):
@@ -135,7 +135,7 @@ class Archiver(object):
     def update(self, when=None):
         if when is None:
             when = date.today()
-        archive = self._create_archive(when)
+        archive = self.create_archive(when)
 
         # for now in task cluster we just generate the latest profile
         if TASK_CLUSTER:
@@ -187,7 +187,7 @@ class Archiver(object):
                     tar.addfile(info)
                 yield info
 
-        self._create_archive(diff_archive, _arc)
+        self.create_archive(diff_archive, _arc)
         logger.msg(str(diff_info))
         if not self.no_signing:
             self._checksum(diff_archive)
@@ -232,14 +232,11 @@ def main(args=sys.argv[1:]):
         args.no_signing,
     )
 
-    if TASK_CLUSTER:
-        name = "today-%s.tgz" % archiver.profile_name
-        when = os.path.join(args.archives_dir, name)
-    else:
-        when = date.today()
-        if args.prior > 0:
-            when = when - timedelta(days=args.prior)
-
+    # the archive name is of the form
+    # profile-<platform>-<type>-<age>-<version>-<customization>.tgz
+    name = "profile-%(platform)s-%(name)s-%(age)s-" "%(version)s-%(customization)s.tgz"
+    name = name % archiver.metadata
+    when = os.path.join(args.archives_dir, name)
     archiver.update(when)
 
 
