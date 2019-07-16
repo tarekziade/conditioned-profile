@@ -145,7 +145,7 @@ def main(args=sys.argv[1:]):
     # profile-<platform>-<type>-<age>-<version>-<customization>.tgz
     name = "profile-%(platform)s-%(name)s-%(age)s-" "%(version)s-%(customization)s.tgz"
     name = name % archiver.metadata
-    archive_name = os.path.join(args.archives_dir, name)
+    archive_name = os.path.join(args.archive, name)
     # no diffs for now
     archiver.create_archive(archive_name)
     logger.msg("Archive created at %s" % archive_name)
