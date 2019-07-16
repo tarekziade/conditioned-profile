@@ -14,6 +14,5 @@ setup(name='conditioned-profile',
       install_requires=install_requires,
       entry_points="""
       [console_scripts]
-      cp-archiver = condprof.archiver:main
       cp-creator = condprof.creator:main
       """)
