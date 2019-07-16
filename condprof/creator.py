@@ -48,7 +48,7 @@ async def run(args):
     if not args.archive:
         return
     logger.msg("Creating archive")
-    archiver = Archiver(args.profile, args.archive, no_signing=True)
+    archiver = Archiver(args.profile, args.archive)
     age = archiver.metadata["age"]
     if age < 7:
         age = "days"

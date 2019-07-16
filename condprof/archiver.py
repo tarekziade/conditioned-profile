@@ -12,7 +12,6 @@ import json
 
 from condprof import logger
 from condprof.diffinfo import DiffInfo
-from condprof.signing import Signer
 from condprof.util import check_exists, download_file, TASK_CLUSTER
 
 from clint.textui import progress
@@ -42,7 +41,6 @@ class Archiver(object):
         pem_file=None,
         pem_password=None,
         archives_server=None,
-        no_signing=False,
     ):
         self.archives_server = archives_server
         self.profile_dir = profile_dir
@@ -53,14 +51,6 @@ class Archiver(object):
         self.profile_name = self.metadata["name"]
         self.pem_file = pem_file
         self.pem_password = pem_password
-        self.no_signing = no_signing
-        if no_signing:
-            self.signer = False
-        else:
-            self.signer = Signer(pem_file, pem_password)
-
-    def _checksum(self, archive, sign=True):
-        return self.signer.checksum(archive, write=True, sign=True)
 
     def _strftime(self, date, template="-%Y-%m-%d-hp.tar.gz"):
         return date.strftime(self.profile_name + template)
@@ -104,8 +94,6 @@ class Archiver(object):
                     if not TASK_CLUSTER:
                         bar.show(bar.last_progress + 1)
 
-        if not self.no_signing:
-            self._checksum(archive)
         return archive
 
     def _update_symlinks(self, archive):
@@ -189,8 +177,6 @@ class Archiver(object):
 
         self.create_archive(diff_archive, _arc)
         logger.msg(str(diff_info))
-        if not self.no_signing:
-            self._checksum(diff_archive)
         return diff_archive
 
 
@@ -198,11 +184,6 @@ def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description="Profile Archiver")
     parser.add_argument("profile_dir", help="Profile Dir", type=str)
     parser.add_argument("archives_dir", help="Archives Dir", type=str)
-
-    parser.add_argument(
-        "--no-signing", help="No signing", action="store_true", default=False
-    )
-
     parser.add_argument("--prior", help="Prior", type=int, default=0)
     parser.add_argument(
         "--pem-file", help="pem file", type=str, default="condprof/tests/key.pem"
@@ -229,7 +210,6 @@ def main(args=sys.argv[1:]):
         args.pem_file,
         args.pem_password,
         args.archives_server,
-        args.no_signing,
     )
 
     # the archive name is of the form

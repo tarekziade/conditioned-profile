@@ -12,7 +12,6 @@ from bs4 import BeautifulSoup
 from clint.textui import progress
 
 from condprof import logger
-from condprof.signing import Signer
 
 
 _BASE_PROFILE = os.path.join(os.path.dirname(__file__), "base_profile")
@@ -72,8 +71,7 @@ def check_exists(archive, server=None):
     return resp.status_code == 200, resp.headers
 
 
-def download_file(url, target=None, check_file=True):
-    signer = Signer()
+def download_file(url, target=None):
     present, headers = check_exists(url)
     if not present:
         logger.msg("Cannot find %r" % url)
@@ -83,27 +81,17 @@ def download_file(url, target=None, check_file=True):
     if target is None:
         target = url.split("/")[-1]
 
-    if check_file:
-        check = requests.get(url + ".sha256")
-        check = check.text
-
     if os.path.exists(target):
-        if not check_file:
-            if etag is not None:
-                if os.path.exists(target + ".etag"):
-                    with open(target + ".etag") as f:
-                        current_etag = f.read()
-                    if etag == current_etag:
-                        logger.msg("Already Downloaded")
-                        # should at least check the size?
-                        return target
+        if etag is not None:
+            if os.path.exists(target + ".etag"):
+                with open(target + ".etag") as f:
+                    current_etag = f.read()
+                if etag == current_etag:
+                    logger.msg("Already Downloaded")
+                    # should at least check the size?
+                    return target
 
-            logger.msg("Changed!")
-        else:
-            existing = signer.checksum(target)
-            if existing == check:
-                logger.msg("Already Downloaded")
-                return target
+        logger.msg("Changed!")
 
     logger.msg("Downloading %s" % url)
     req = requests.get(url, stream=True)

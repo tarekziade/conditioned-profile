@@ -12,31 +12,22 @@ from condprof.archiver import Archiver
 from condprof.creator import build_profile
 
 
-PEM_FILE = os.path.join(os.path.dirname(__file__), "key.pem")
-PEM_PASS = b"password"
-
-
 class TestArchiver(unittest.TestCase):
     def setUp(self):
         self.profile_dir = fresh_profile()
         self.archives_dir = os.path.join(tempfile.mkdtemp())
         self.args = args = namedtuple(
-            "args",
-            ["scenarii", "profile", "firefox", "max_urls", "pem_file", "pem_password"],
+            "args", ["scenarii", "profile", "firefox", "max_urls"]
         )
         args.scenarii = "heavy"
         args.profile = self.profile_dir
         args.firefox = None
         args.max_urls = 2
-        args.pem_file = PEM_FILE
-        args.pem_password = PEM_PASS
         args.profile_dir = self.profile_dir
         args.archives_server = None
         args.force_new = True
         args.archives_dir = self.archives_dir
-        self.archiver = Archiver(
-            args.profile_dir, args.archives_dir, args.pem_file, args.pem_password
-        )
+        self.archiver = Archiver(args.profile_dir, args.archives_dir)
 
     def _diff_name(self, now=None, then=None):
         if now is None:
@@ -59,38 +50,23 @@ class TestArchiver(unittest.TestCase):
         res.sort()
         today = date.today()
         archive = today.strftime("heavy-%Y-%m-%d-hp.tar.gz")
-        wanted = [
-            archive,
-            "heavy-latest.tar.gz",
-            archive + ".sha256",
-            archive + ".asc",
-            "heavy-latest.tar.gz.asc",
-            "heavy-latest.tar.gz.sha256",
-        ]
+        wanted = [archive, "heavy-latest.tar.gz"]
         wanted.sort()
         self.assertEqual(res, wanted)
 
     def test_diff_archiving(self):
         # we update the archives every day for 15 days
         # we keep the last ten days
-        wanted = [
-            "heavy-latest.tar.gz",
-            "heavy-latest.tar.gz.sha256",
-            "heavy-latest.tar.gz.asc",
-        ]
+        wanted = ["heavy-latest.tar.gz"]
 
         _15_days_ago = date.today() - timedelta(days=15)
 
         for i in range(15):
             when = _15_days_ago + timedelta(days=i)
             wanted.append(when.strftime("heavy-%Y-%m-%d-hp.tar.gz"))
-            wanted.append(when.strftime("heavy-%Y-%m-%d-hp.tar.gz.sha256"))
-            wanted.append(when.strftime("heavy-%Y-%m-%d-hp.tar.gz.asc"))
 
             if i != 0:
                 wanted.append(self._diff_name(when))
-                wanted.append(self._diff_name(when) + ".sha256")
-                wanted.append(self._diff_name(when) + ".asc")
 
             self.archiver.update(when)
 

@@ -2,4 +2,3 @@ git+https://github.com/HDE/arsenic.git
 requests
 clint
 beautifulsoup4
-cryptography
