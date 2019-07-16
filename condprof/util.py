@@ -8,7 +8,6 @@ import json
 
 import requests
 from requests.exceptions import ConnectionError
-from bs4 import BeautifulSoup
 
 from condprof import progress
 from condprof import logger
@@ -40,6 +39,11 @@ link = "https://ftp.mozilla.org/pub/firefox/nightly/latest-mozilla-central/"
 
 
 def get_firefox_download_link():
+
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        raise ImportError("You need to run pip install beautifulsoup4")
     if platform.system() == "Darwin":
         extension = ".dmg"
     elif platform.system() == "Linux":
