@@ -143,7 +143,7 @@ def main(args=sys.argv[1:]):
     archiver.metadata["age"] = age
     # the archive name is of the form
     # profile-<platform>-<type>-<age>-<version>-<customization>.tgz
-    name = "profile-%(platform)s-%(name)s-%(age)s-" "%(version)s-%(customization)s.tgz"
+    name = "profile-%(platform)s-%(name)s-%(age)s-%(customization)s.tgz"
     name = name % archiver.metadata
     archive_name = os.path.join(args.archive, name)
     # no diffs for now
