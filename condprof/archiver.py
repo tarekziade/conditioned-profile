@@ -14,7 +14,7 @@ from condprof import logger
 from condprof.diffinfo import DiffInfo
 from condprof.util import check_exists, download_file, TASK_CLUSTER
 
-from clint.textui import progress
+from condprof import progress
 
 
 def _b(data):

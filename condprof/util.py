@@ -9,8 +9,8 @@ import json
 import requests
 from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup
-from clint.textui import progress
 
+from condprof import progress
 from condprof import logger
 
 
