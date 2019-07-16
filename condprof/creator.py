@@ -163,6 +163,8 @@ def main(args=sys.argv[1:]):
     finally:
         loop.close()
 
+    raise Exception("Allow retriggers with this exception")
+
 
 if __name__ == "__main__":
     main()
