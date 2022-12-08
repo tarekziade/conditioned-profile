@@ -4,18 +4,37 @@
 #
 #    pip-compile requirements.in
 #
-aiohttp==3.5.4            # via arsenic
+aiohttp==3.5.4
+    # via arsenic
 arsenic==19.1
-async-timeout==3.0.1      # via aiohttp
-attrs==19.1.0             # via aiohttp, arsenic
-certifi==2019.6.16        # via requests
-chardet==3.0.4            # via aiohttp, requests
-idna-ssl==1.1.0           # via aiohttp
-idna==2.8                 # via idna-ssl, requests, yarl
-multidict==4.5.2          # via aiohttp, yarl
+    # via -r requirements.in
+async-timeout==3.0.1
+    # via aiohttp
+attrs==19.1.0
+    # via
+    #   aiohttp
+    #   arsenic
+certifi==2022.12.7
+    # via requests
+chardet==3.0.4
+    # via
+    #   aiohttp
+    #   requests
+idna==2.8
+    # via
+    #   requests
+    #   yarl
+multidict==4.5.2
+    # via
+    #   aiohttp
+    #   yarl
 requests==2.22.0
-six==1.12.0               # via structlog
-structlog==19.1.0         # via arsenic
-typing-extensions==3.7.4  # via aiohttp
-urllib3==1.25.3           # via requests
-yarl==1.3.0               # via aiohttp
+    # via -r requirements.in
+six==1.12.0
+    # via structlog
+structlog==19.1.0
+    # via arsenic
+urllib3==1.25.3
+    # via requests
+yarl==1.3.0
+    # via aiohttp
